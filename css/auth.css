@@ -1,0 +1,37 @@
+/* =========================================================
+   auth.css — pantalla de login / registro
+   ========================================================= */
+
+.auth-screen{
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;
+  background:
+    radial-gradient(900px 500px at 50% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 60%),
+    var(--bg);
+}
+
+.auth-card{
+  width: 100%; max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.auth-brand{ text-align: center; margin-bottom: 1.5rem; }
+.auth-brand img{ width: 4.2rem; height: 4.2rem; margin: 0 auto .6rem; border-radius: 14px; }
+.auth-brand .kicker{ color: var(--accent); font-family: var(--f-mono); font-size: .72rem; letter-spacing: .2em; }
+.auth-brand h1{ font-size: 2rem; margin: .1em 0 0; }
+
+.auth-tabs{ display: flex; gap: .5rem; margin-bottom: 1.25rem; background: var(--bg-elevated); padding: .3rem; border-radius: 999px; }
+.auth-tabs button{
+  flex: 1; padding: .5em; border: none; background: transparent; color: var(--text-muted);
+  border-radius: 999px; cursor: pointer; font-weight: 600; font-size: .85rem;
+}
+.auth-tabs button.active{ background: var(--surface-2); color: var(--accent); }
+
+.auth-error{
+  background: var(--danger-bg); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  padding: .6em .8em; border-radius: var(--radius-sm); font-size: .85rem; margin-bottom: 1rem; display: none;
+}
+.auth-error.show{ display: block; }

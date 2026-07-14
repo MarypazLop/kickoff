@@ -1,0 +1,11 @@
+/* =========================================================
+   views/timeline.css — 2.3 Timeline Infinito
+   ========================================================= */
+
+.timeline{ max-width: 720px; margin: 0 auto; }
+.timeline-block{ margin-bottom: 1.5rem; }
+.timeline-block .day-label{
+  font-family: var(--f-mono); color: var(--text-muted); font-size: .78rem; margin-bottom: .5em; text-align: center;
+}
+.sentinel{ height: 1px; }
+.timeline-status{ text-align: center; padding: 1.5rem; color: var(--text-muted); }

@@ -1,0 +1,90 @@
+/* =========================================================
+   layout.css — estructura de tres columnas (inspirada en
+   paneles de control tipo dashboard): nav | main | aside
+   ========================================================= */
+
+.app{ display: none; min-height: 100vh; }
+.app.active{ display: grid; grid-template-columns: var(--nav-w) 1fr var(--aside-w); }
+
+/* ---------------------------- Barra lateral ---------------------------- */
+.sidenav{
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border);
+  padding: 1.25rem 1rem;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.sidenav-brand{
+  display: flex; align-items: center; gap: .7rem;
+  padding: .25rem .3rem 1.25rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem;
+}
+.sidenav-brand img{ width: 2.4rem; height: 2.4rem; border-radius: 8px; }
+.sidenav-brand .kicker{ display: block; color: var(--accent); font-family: var(--f-mono); font-size: .64rem; letter-spacing: .16em; }
+.sidenav-brand h1{ font-size: 1.3rem; margin: 0; line-height: 1.1; }
+
+.nav-item{
+  display: flex; align-items: center; gap: .8em;
+  padding: .7em .8em; border-radius: var(--radius);
+  color: var(--text-muted); text-decoration: none; cursor: pointer;
+  border: 1px solid transparent; margin-bottom: .3rem; font-weight: 600; font-size: .92rem;
+  background: none; width: 100%; text-align: left;
+}
+.nav-item:hover{ background: var(--surface); color: var(--text); }
+.nav-item.active{ background: var(--surface-2); color: var(--accent); border-color: var(--border); position: relative; }
+.nav-item.active::before{
+  content: ""; position: absolute; left: -1rem; top: .3rem; bottom: .3rem; width: 3px;
+  background: var(--accent); border-radius: 2px;
+}
+
+.sidenav-footer{ margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+/* ---------------------------- Contenido central ---------------------------- */
+.main{ min-width: 0; padding: 1.75rem 2rem 3rem; }
+.view{ display: none; }
+.view.active{ display: block; animation: fadein .25s ease; }
+@keyframes fadein{ from{ opacity: 0; transform: translateY(4px); } to{ opacity: 1; transform: none; } }
+
+.view-header{ display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.view-header .kicker{ color: var(--accent); font-family: var(--f-mono); font-size: .72rem; letter-spacing: .16em; }
+.view-header h2{ font-size: 1.85rem; margin: .15em 0 0; }
+.view-header .sub{ color: var(--text-muted); font-size: .9rem; max-width: 52ch; margin: 0; }
+
+/* ---------------------------- Panel derecho ---------------------------- */
+.aside-panel{
+  background: var(--bg-elevated);
+  border-left: 1px solid var(--border);
+  padding: 1.5rem 1.25rem;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 1.25rem;
+}
+.aside-panel h3{ font-size: .95rem; margin-bottom: .8rem; }
+
+.profile-card{ display: flex; align-items: center; gap: .8rem; }
+.profile-card .avatar{
+  width: 2.6rem; height: 2.6rem; border-radius: 50%; background: var(--surface-2);
+  display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0;
+}
+.profile-card .who strong{ display: block; font-size: .95rem; }
+.profile-card .who span{ font-size: .78rem; color: var(--text-muted); }
+
+.stat-row{ display: flex; justify-content: space-between; padding: .45em 0; border-bottom: 1px solid var(--border); font-size: .85rem; }
+.stat-row:last-child{ border-bottom: none; }
+.stat-row .n{ font-family: var(--f-mono); color: var(--accent); font-weight: 700; }
+
+/* ---------------------------- Responsive ---------------------------- */
+@media (max-width: 1200px){
+  .app.active{ grid-template-columns: var(--nav-w) 1fr; }
+  .aside-panel{ display: none; }
+}
+@media (max-width: 860px){
+  .app.active{ grid-template-columns: 1fr; }
+  .sidenav{
+    position: relative; height: auto; width: 100%; flex-direction: row;
+    overflow-x: auto; padding: .75rem; align-items: center;
+  }
+  .sidenav-brand{ display: none; }
+  .nav-item{ flex-shrink: 0; }
+  .nav-item.active::before{ display: none; }
+  .sidenav-footer{ display: none; }
+  .main{ padding: 1.25rem; }
+}

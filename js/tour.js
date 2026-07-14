@@ -1,0 +1,135 @@
+/**
+ * tour.js — 2.1 Tour Virtual de Sedes
+ * Objetivo técnico: scrollIntoView + estado activo entre elementos.
+ * Reto de resiliencia: si /get/games falla, las sedes siguen siendo
+ * clicables; solo la sección de partidos de esa sede muestra un error local.
+ */
+import { Endpoints, ApiError } from './api.js';
+import { state, indexStadiums, indexTeams, teamName } from './state.js';
+import { iconMarkup } from './icons.js';
+
+const listEl = document.getElementById('stadium-list');
+const gamesSection = document.getElementById('games-of-stadium');
+const gamesTitle = document.getElementById('games-of-stadium-title');
+const gamesBody = document.getElementById('games-of-stadium-body');
+
+let activeStadiumId = null;
+let gamesLoaded = false;
+
+export async function initTour() {
+  renderStadiumsSkeleton();
+  try {
+    if (!state.stadiums.length) {
+      const { data } = await Endpoints.stadiums();
+      indexStadiums(data.stadiums || data);
+    }
+    renderStadiums();
+  } catch (err) {
+    listEl.innerHTML = `<div class="inline-error">No se pudieron cargar las 16 sedes. <button class="btn btn-sm" id="retry-stadiums"><span class="icon" aria-hidden="true">${iconMarkup('refresh')}</span>Reintentar</button></div>`;
+    document.getElementById('retry-stadiums')?.addEventListener('click', initTour);
+    return;
+  }
+
+  // Precarga los partidos en segundo plano (no bloquea la navegación entre sedes)
+  try {
+    if (!state.games.length) {
+      const { data } = await Endpoints.games();
+      state.games = data.games || data;
+    }
+    if (!state.teams.length) {
+      const { data } = await Endpoints.teams();
+      indexTeams(data.teams || data);
+    }
+    gamesLoaded = true;
+  } catch (err) {
+    gamesLoaded = false;
+  }
+
+  if (activeStadiumId) selectStadium(activeStadiumId);
+}
+
+function renderStadiumsSkeleton() {
+  listEl.innerHTML = Array.from({ length: 8 })
+    .map(() => `<div class="skeleton" style="height:88px"></div>`)
+    .join('');
+}
+
+function renderStadiums() {
+  listEl.innerHTML = state.stadiums
+    .map(
+      (s) => `
+      <button class="stadium-btn" data-id="${s.id}" type="button">
+        <span class="icon-row">
+          <span class="icon" aria-hidden="true">${iconMarkup('stadium')}</span>
+        </span>
+        <span class="name">${s.name_en}</span>
+        <span class="city">${s.city_en}, ${s.country_en}</span>
+        <span class="cap">Aforo: ${Number(s.capacity).toLocaleString('es-CR')}</span>
+      </button>`
+    )
+    .join('');
+
+  listEl.querySelectorAll('.stadium-btn').forEach((btn) => {
+    btn.addEventListener('click', () => selectStadium(btn.dataset.id));
+  });
+}
+
+function selectStadium(stadiumId) {
+  activeStadiumId = stadiumId;
+
+  listEl.querySelectorAll('.stadium-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.id === stadiumId);
+  });
+
+  const stadium = state.stadiumsById[stadiumId];
+  gamesTitle.textContent = stadium
+    ? `Partidos en ${stadium.name_en}`
+    : 'Partidos de la sede seleccionada';
+  gamesSection.classList.remove('hidden');
+
+  // Navegación interna del DOM: desplazamiento suave hacia la sección.
+  gamesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  renderGamesOfStadium(stadiumId);
+}
+
+function renderGamesOfStadium(stadiumId) {
+  // Reto de resiliencia: un fallo aquí NUNCA bloquea el resto de la navegación.
+  if (!gamesLoaded) {
+    gamesBody.innerHTML = `
+      <div class="inline-error">
+        No se pudieron cargar los partidos de esta sede.
+        <button class="btn btn-sm" id="retry-games-of-stadium"><span class="icon" aria-hidden="true">${iconMarkup('refresh')}</span>Reintentar</button>
+      </div>`;
+    document.getElementById('retry-games-of-stadium')?.addEventListener('click', async () => {
+      gamesBody.innerHTML = `<div class="skeleton" style="height:60px"></div>`;
+      try {
+        const { data } = await Endpoints.games();
+        state.games = data.games || data;
+        gamesLoaded = true;
+        renderGamesOfStadium(stadiumId);
+      } catch (err) {
+        renderGamesOfStadium(stadiumId);
+      }
+    });
+    return;
+  }
+
+  const games = state.games.filter((g) => String(g.stadium_id) === String(stadiumId));
+  if (!games.length) {
+    gamesBody.innerHTML = `<p>Aún no hay partidos asignados a esta sede.</p>`;
+    return;
+  }
+
+  gamesBody.innerHTML = games
+    .map(
+      (g) => `
+      <div class="match-row">
+        <span class="team home">${g.home_team_label || teamName(g.home_team_id)}</span>
+        <span class="score">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
+        <span class="team away">${g.away_team_label || teamName(g.away_team_id)}</span>
+        <span class="meta">${g.local_date} · Jornada ${g.matchday} · Grupo ${g.group}</span>
+      </div>`
+    )
+    .join('');
+}

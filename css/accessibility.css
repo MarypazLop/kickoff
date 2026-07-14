@@ -1,0 +1,47 @@
+/* =========================================================
+   accessibility.css
+   Escala de tamaño de letra controlada desde js/a11y.js. Como el resto
+   del proyecto está maquetado en rem/em, cambiar el font-size de <html>
+   escala toda la interfaz de forma consistente.
+   ========================================================= */
+
+html.a11y-font-sm{ font-size: 14px; }
+html.a11y-font-md{ font-size: 16px; }
+html.a11y-font-lg{ font-size: 18px; }
+html.a11y-font-xl{ font-size: 20px; }
+
+.a11y-panel{ display: flex; flex-direction: column; gap: .9rem; }
+.a11y-section{ display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+
+.a11y-controls{
+  display: flex; align-items: center; gap: .4rem;
+}
+.a11y-controls .btn-icon{
+  width: 2.1rem; height: 2.1rem;
+}
+.a11y-label{
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted);
+  margin-right: .2rem;
+}
+
+/* Estado visual cuando una opción de accesibilidad está activada */
+.a11y-controls .btn-icon.active{
+  background: var(--accent); border-color: var(--accent); color: var(--accent-contrast);
+}
+
+/* ---------------------------------------------------------------------
+ * Alto / bajo contraste — variables de color alternativas, activadas por
+ * el atributo data-contrast en <html> (ver js/a11y.js). Al reutilizar las
+ * mismas variables de siempre (--bg, --text, --accent, etc.), el resto del
+ * CSS del proyecto no necesita saber que el modo de contraste existe.
+ * ------------------------------------------------------------------- */
+html[data-contrast="high"]{
+  --bg: #000000; --bg-elevated: #050505; --surface: #0d0d0d; --surface-2: #1a1a1a;
+  --border: #ffffff; --text: #ffffff; --text-muted: #e6e6e6;
+  --accent: #ffe600; --accent-contrast: #000000; --accent-strong: #ffd000;
+}
+html[data-contrast="low"]{
+  --bg: #232a26; --bg-elevated: #262d29; --surface: #2b322e; --surface-2: #313a35;
+  --border: #414d47; --text: #cfd6d1; --text-muted: #9aa59f;
+  --accent: #9fb79b; --accent-contrast: #1c2320; --accent-strong: #8aa286;
+}

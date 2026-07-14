@@ -1,0 +1,20 @@
+/* =========================================================
+   views/tour.css — 2.1 Tour Virtual de Sedes
+   ========================================================= */
+
+.stadium-btn{
+  display: flex; flex-direction: column; gap: .3em; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 1rem; cursor: pointer; color: var(--text); transition: box-shadow .15s ease, border-color .15s ease;
+}
+.stadium-btn:hover{ border-color: var(--accent); }
+.stadium-btn.active{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 24px -6px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.stadium-btn .icon-row{ display: flex; align-items: center; gap: .5em; color: var(--accent); }
+.stadium-btn .name{ font-family: var(--f-display); font-size: 1.15rem; text-transform: uppercase; }
+.stadium-btn .city{ font-size: .8rem; color: var(--text-muted); }
+.stadium-btn .cap{ font-family: var(--f-mono); font-size: .72rem; color: var(--text-muted); }
+
+#games-of-stadium{ margin-top: 1.75rem; scroll-margin-top: 1.5rem; }

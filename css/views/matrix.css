@@ -1,0 +1,24 @@
+/* =========================================================
+   views/matrix.css — 2.5 Matriz de Enfrentamientos por Grupo
+   ========================================================= */
+
+.group-block{ margin-bottom: 2rem; }
+.group-block h3{
+  font-size: 1.05rem; margin-bottom: .7rem; display: flex; align-items: center; gap: .6em;
+  text-transform: none; letter-spacing: 0; font-family: var(--f-body); font-weight: 700;
+}
+.group-block h3 .group-letter{
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--surface-2); color: var(--accent);
+  font-family: var(--f-mono); font-size: .85rem;
+}
+
+.matrix-table{ border-collapse: collapse; width: 100%; font-size: .78rem; }
+.matrix-table th, .matrix-table td{ border: 1px solid var(--border); padding: .55em; text-align: center; }
+.matrix-table th{ background: var(--bg-elevated); color: var(--text-muted); font-weight: 600; }
+.matrix-table td{ background: var(--surface); font-family: var(--f-mono); color: var(--text-muted); }
+.matrix-table td.diagonal{
+  background: repeating-linear-gradient(45deg, var(--bg-elevated), var(--bg-elevated) 4px, var(--surface) 4px, var(--surface) 8px);
+  color: var(--border);
+}
+.matrix-table td.played{ color: var(--accent); font-weight: 700; }
