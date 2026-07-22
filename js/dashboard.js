@@ -9,7 +9,7 @@
  * de ese equipo con aviso de "datos no actualizados", nunca un dashboard vacío.
  */
 import { Endpoints } from './api.js';
-import { state, indexTeams, indexGroups, setFavoriteTeam, flagColorsForTeam, normalizeText, setStale, anyStale, staleSavedAt } from './state.js';
+import { state, indexTeams, indexGroups, setFavoriteTeam, flagColorsForTeam, normalizeText, setStale, anyStale, staleSavedAt, escapeHtml } from './state.js';
 import { iconMarkup } from './icons.js';
 import { teamFlagImg } from './flags.js';
 
@@ -80,8 +80,8 @@ function renderChips() {
     .map((t) => {
       const [c1, c2] = flagColorsForTeam(t);
       return `
-      <button type="button" class="team-chip" data-id="${t.id}" style="--c1:${c1};--c2:${c2}">
-        ${teamFlagImg(t)}${t.name_en}
+      <button type="button" class="team-chip" data-id="${escapeHtml(t.id)}" style="--c1:${c1};--c2:${c2}">
+        ${teamFlagImg(t)}${escapeHtml(t.name_en)}
       </button>`;
     })
     .join('');
@@ -148,13 +148,13 @@ function selectTeam(teamId) {
       <div class="card">
         <div class="team-header">
           ${teamFlagImg(team, { class: 'flag-icon-lg' })}
-          <h3>${team.name_en}</h3>
+          <h3>${escapeHtml(team.name_en)}</h3>
         </div>
-        <p class="text-muted">Grupo ${groupLabel || '—'} · Código FIFA ${team.fifa_code}</p>
+        <p class="text-muted">Grupo ${escapeHtml(groupLabel) || '—'} · Código FIFA ${escapeHtml(team.fifa_code)}</p>
         ${renderStanding(group, teamId)}
       </div>
       <div class="card">
-        <h3>Partidos de ${team.name_en}</h3>
+        <h3>Partidos de ${escapeHtml(team.name_en)}</h3>
         ${renderTeamGames(teamGames, teamId)}
       </div>
     </div>`;
@@ -168,11 +168,11 @@ function renderStanding(group, teamId) {
       const isSelf = String(row.team_id) === String(teamId);
       return `
       <div class="standing-row ${isSelf ? 'self' : ''}">
-        <span>${t ? teamFlagImg(t) : ''}${t ? t.fifa_code : row.team_id}</span>
-        <span>${t ? t.name_en : row.team_id}</span>
-        <span>${row.pts} pts</span>
-        <span>${row.gf} GF</span>
-        <span>${row.ga} GA</span>
+        <span>${t ? teamFlagImg(t) : ''}${escapeHtml(t ? t.fifa_code : row.team_id)}</span>
+        <span>${escapeHtml(t ? t.name_en : row.team_id)}</span>
+        <span>${escapeHtml(row.pts)} pts</span>
+        <span>${escapeHtml(row.gf)} GF</span>
+        <span>${escapeHtml(row.ga)} GA</span>
       </div>`;
     })
     .join('');
@@ -194,9 +194,9 @@ function renderTeamGames(games, teamId) {
       return `
       <div class="match-row">
         <span class="team home">${isHome ? 'Local' : 'Visitante'}</span>
-        <span class="score">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
-        <span class="team away">${rivalTeam ? teamFlagImg(rivalTeam) : ''}vs ${rival}</span>
-        <span class="meta">${g.local_date}</span>
+        <span class="score">${escapeHtml(g.home_score ?? '-')} : ${escapeHtml(g.away_score ?? '-')}</span>
+        <span class="team away">vs ${rivalTeam ? teamFlagImg(rivalTeam) : ''}${escapeHtml(rival)}</span>
+        <span class="meta">${escapeHtml(g.local_date)}</span>
       </div>`;
     })
     .join('');

@@ -82,6 +82,19 @@ export function resolveGroupLabel(group, index = 0) {
   return String.fromCharCode(65 + index);
 }
 
+/* -------------------------------------------------------------------------
+ * Seguridad: toda la interfaz inserta contenido con innerHTML por
+ * simplicidad, pero varios campos (nombre de equipo, sede, grupo, fechas)
+ * vienen de la API externa y NUNCA deben tratarse como HTML de confianza.
+ * escapeHtml() se usa en cada vista antes de interpolar esos campos, para
+ * que un valor inesperado (p. ej. "<img src=x onerror=...>") se muestre
+ * como texto literal en vez de ejecutarse.
+ * ---------------------------------------------------------------------- */
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+export function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
+}
+
 /** Compara ignorando mayúsculas/minúsculas y acentos (búsquedas, filtros). */
 export function normalizeText(str) {
   return (str || '')

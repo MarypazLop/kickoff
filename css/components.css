@@ -84,6 +84,16 @@
 }
 .flag-icon-lg{ width: 2.2em; height: 1.65em; border-radius: 5px; }
 
+/* Separación entre la bandera y el texto que la acompaña quedando en la
+   misma línea. Se aplica solo donde bandera+texto viven en un mismo nodo
+   inline (fila de partido, tabla de posiciones); en contenedores flex que
+   ya usan `gap` entre hijos (chips, encabezado del equipo) no hace falta
+   y por eso no se generaliza a `.flag-icon` completo. */
+.match-row .team .flag-icon,
+.standing-row .flag-icon{
+  margin: 0 .4em;
+}
+
 /* ---------------------------- Overlay verde sobre fotografías ---------------------------- */
 /* 9.1 — capa semitransparente verde muy oscura para banners, fondos de
    tarjetas destacadas y fotografías de estadios/Tour. Se aplica con un

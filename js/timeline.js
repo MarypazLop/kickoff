@@ -8,7 +8,7 @@
  * sin duplicar partidos ya insertados.
  */
 import { Endpoints } from './api.js';
-import { state, indexTeams, teamName, setStale, anyStale, staleSavedAt } from './state.js';
+import { state, indexTeams, teamName, setStale, anyStale, staleSavedAt, escapeHtml } from './state.js';
 import { iconMarkup } from './icons.js';
 import { teamFlagImg } from './flags.js';
 
@@ -130,10 +130,10 @@ function insertNextBlock() {
     const row = document.createElement('div');
     row.className = 'match-row';
     row.innerHTML = `
-      <span class="team home">${g.home_team_label || teamName(g.home_team_id)}${homeTeam ? teamFlagImg(homeTeam) : ''}</span>
-      <span class="score">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
-      <span class="team away">${awayTeam ? teamFlagImg(awayTeam) : ''}${g.away_team_label || teamName(g.away_team_id)}</span>
-      <span class="meta">${g.local_date} · Grupo ${g.group}</span>`;
+      <span class="team home">${homeTeam ? teamFlagImg(homeTeam) : ''}${escapeHtml(g.home_team_label || teamName(g.home_team_id))}</span>
+      <span class="score">${escapeHtml(g.home_score ?? '-')} : ${escapeHtml(g.away_score ?? '-')}</span>
+      <span class="team away">${awayTeam ? teamFlagImg(awayTeam) : ''}${escapeHtml(g.away_team_label || teamName(g.away_team_id))}</span>
+      <span class="meta">${escapeHtml(g.local_date)} · Grupo ${escapeHtml(g.group)}</span>`;
     block.appendChild(row);
   });
 

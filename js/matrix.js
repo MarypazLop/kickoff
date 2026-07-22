@@ -11,7 +11,7 @@
  * API nunca deje el contenedor en blanco sin explicación.
  */
 import { Endpoints } from './api.js';
-import { state, indexTeams, indexGroups, setStale, anyStale, staleSavedAt } from './state.js';
+import { state, indexTeams, indexGroups, setStale, anyStale, staleSavedAt, escapeHtml } from './state.js';
 import { iconMarkup } from './icons.js';
 import { teamFlagImg } from './flags.js';
 
@@ -103,7 +103,7 @@ function cellContent(teamA, teamB) {
   const aIsHome = String(match.home_team_id) === String(teamA);
   const scoreA = aIsHome ? match.home_score : match.away_score;
   const scoreB = aIsHome ? match.away_score : match.home_score;
-  return { text: `${scoreA} - ${scoreB}`, played: true };
+  return { text: `${escapeHtml(scoreA)} - ${escapeHtml(scoreB)}`, played: true };
 }
 
 function renderAllGroups() {
@@ -132,25 +132,25 @@ function renderAllGroups() {
 
     const header = `
       <h3>
-        <span class="group-letter">${group.label}</span>
-        Grupo ${group.label}
+        <span class="group-letter">${escapeHtml(group.label)}</span>
+        Grupo ${escapeHtml(group.label)}
         ${!gamesAvailable ? '<span class="badge badge-stale">Partidos no disponibles</span>' : ''}
       </h3>`;
 
-    const headRow = `<tr><th></th>${teams.map((t) => `<th title="${t.name_en}">${teamFlagImg(t)}<br>${t.fifa_code}</th>`).join('')}</tr>`;
+    const headRow = `<tr><th></th>${teams.map((t) => `<th title="${escapeHtml(t.name_en)}">${teamFlagImg(t)}<br>${escapeHtml(t.fifa_code)}</th>`).join('')}</tr>`;
 
     const bodyRows = teams
       .map((rowTeam) => {
         const cells = teams
           .map((colTeam) => {
             if (rowTeam.id === colTeam.id) {
-              return `<td class="diagonal" data-row="${rowTeam.id}" data-col="${colTeam.id}">—</td>`;
+              return `<td class="diagonal" data-row="${escapeHtml(rowTeam.id)}" data-col="${escapeHtml(colTeam.id)}">—</td>`;
             }
             const { text, played } = cellContent(rowTeam.id, colTeam.id);
-            return `<td class="${played ? 'played' : 'pending'}" data-row="${rowTeam.id}" data-col="${colTeam.id}">${text}</td>`;
+            return `<td class="${played ? 'played' : 'pending'}" data-row="${escapeHtml(rowTeam.id)}" data-col="${escapeHtml(colTeam.id)}">${text}</td>`;
           })
           .join('');
-        return `<tr><th title="${rowTeam.name_en}">${teamFlagImg(rowTeam)}<br>${rowTeam.fifa_code}</th>${cells}</tr>`;
+        return `<tr><th title="${escapeHtml(rowTeam.name_en)}">${teamFlagImg(rowTeam)}<br>${escapeHtml(rowTeam.fifa_code)}</th>${cells}</tr>`;
       })
       .join('');
 

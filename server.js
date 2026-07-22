@@ -107,8 +107,34 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon',
 };
 
+/* -------------------------------------------------------------------------
+ * Cabeceras de seguridad, aplicadas a TODAS las respuestas (estáticas, API
+ * y rutas de depuración). Alcance calculado según lo que la app realmente
+ * carga: fuentes de Google Fonts (@import en variables.css/premium.css),
+ * scripts propios como módulos ES (js/app.js y sus imports, todos del mismo
+ * origen), imágenes propias + un placeholder data:, y fetch() únicamente
+ * hacia /api/* (mismo origen). No se permiten iframes ni envío de
+ * formularios a otros orígenes.
+ * ---------------------------------------------------------------------- */
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data:",
+    "connect-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; '),
+};
+
 function sendJson(res, status, payload) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...SECURITY_HEADERS });
   res.end(JSON.stringify(payload));
 }
 
@@ -150,6 +176,7 @@ async function proxyApi(req, res, requestUrl) {
     const responseHeaders = {
       'Content-Type': upstream.headers.get('content-type') || 'application/json; charset=utf-8',
       'Cache-Control': 'no-store',
+      ...SECURITY_HEADERS,
     };
 
     res.writeHead(upstream.status, responseHeaders);
@@ -183,6 +210,7 @@ async function serveStatic(req, res, requestUrl) {
     res.writeHead(200, {
       'Content-Type': MIME_TYPES[extension] || 'application/octet-stream',
       'Cache-Control': extension === '.html' ? 'no-cache' : 'public, max-age=3600',
+      ...SECURITY_HEADERS,
     });
     res.end(data);
   } catch {

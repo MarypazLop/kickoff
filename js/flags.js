@@ -8,6 +8,7 @@
  * código ISO ni URL de bandera, así que aquí se centraliza el único mapeo
  * FIFA -> ISO de todo el proyecto. Ninguna vista debe repetir esta tabla.
  */
+import { escapeHtml } from './state.js';
 
 /** FIFA (3 letras) -> ISO 3166-1 alpha-2 (nombre de archivo en assets/flags). */
 const FIFA_TO_ISO = {
@@ -105,5 +106,33 @@ export function getTeamFlag(team) {
 export function teamFlagImg(team, opts = {}) {
   const { src, alt } = getTeamFlag(team);
   const extraClass = opts.class ? ` ${opts.class}` : '';
-  return `<img class="flag-icon${extraClass}" src="${src}" alt="${alt}" width="20" height="15" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${PLACEHOLDER_FLAG}';this.alt='Bandera no disponible';">`;
+  // alt viene del nombre del equipo (dato de la API externa): se escapa
+  // antes de interpolarlo en el atributo para evitar una fuga de HTML/
+  // atributos si el valor trae comillas o símbolos "<", ">".
+  return `<img class="flag-icon${extraClass}" src="${src}" alt="${escapeHtml(alt)}" width="20" height="15" loading="lazy" decoding="async">`;
 }
+
+/**
+ * Fallback centralizado si una imagen de bandera falla al cargar (archivo
+ * ausente o corrupto): se reemplaza una sola vez por el placeholder neutral.
+ * Se usa un listener delegado en `document` (fase de captura, porque el
+ * evento "error" de <img> no burbujea) en vez de un atributo `onerror`
+ * en línea, para no depender de manejadores de eventos inline en el HTML
+ * generado — más seguro y compatible con una Content-Security-Policy que
+ * bloquee scripts/inline handlers.
+ */
+document.addEventListener(
+  'error',
+  (event) => {
+    const img = event.target;
+    if (
+      img instanceof HTMLImageElement &&
+      img.classList.contains('flag-icon') &&
+      img.src !== PLACEHOLDER_FLAG
+    ) {
+      img.src = PLACEHOLDER_FLAG;
+      img.alt = 'Bandera no disponible';
+    }
+  },
+  true
+);

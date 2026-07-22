@@ -6,7 +6,7 @@
  * muestran esqueletos de carga; nunca una pantalla en blanco.
  */
 import { Endpoints } from './api.js';
-import { state, indexTeams, teamName, setStale, anyStale, staleSavedAt } from './state.js';
+import { state, indexTeams, teamName, setStale, anyStale, staleSavedAt, escapeHtml } from './state.js';
 import { iconMarkup } from './icons.js';
 import { teamFlagImg } from './flags.js';
 
@@ -202,12 +202,12 @@ function renderSelectedDay() {
       const awayTeam = state.teamsById[String(g.away_team_id)];
       return `
       <div class="simul-col">
-        <h4>Partido ${i + 1} · ${g.local_date.split(' ')[1] || ''}</h4>
+        <h4>Partido ${i + 1} · ${escapeHtml(g.local_date.split(' ')[1] || '')}</h4>
         <div class="match-row match-row-stacked">
-          <span class="team">${g.home_team_label || teamName(g.home_team_id)}${homeTeam ? teamFlagImg(homeTeam) : ''}</span>
-          <span class="score">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
-          <span class="team">${awayTeam ? teamFlagImg(awayTeam) : ''}${g.away_team_label || teamName(g.away_team_id)}</span>
-          <span class="meta">Grupo ${g.group} · Jornada ${g.matchday}</span>
+          <span class="team">${homeTeam ? teamFlagImg(homeTeam) : ''}${escapeHtml(g.home_team_label || teamName(g.home_team_id))}</span>
+          <span class="score">${escapeHtml(g.home_score ?? '-')} : ${escapeHtml(g.away_score ?? '-')}</span>
+          <span class="team">${awayTeam ? teamFlagImg(awayTeam) : ''}${escapeHtml(g.away_team_label || teamName(g.away_team_id))}</span>
+          <span class="meta">Grupo ${escapeHtml(g.group)} · Jornada ${escapeHtml(g.matchday)}</span>
         </div>
       </div>`;
     })

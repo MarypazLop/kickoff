@@ -5,7 +5,7 @@
  * clicables; solo la sección de partidos de esa sede muestra un error local.
  */
 import { Endpoints, ApiError } from './api.js';
-import { state, indexStadiums, indexTeams, teamName, stadiumImagePath, setStale, anyStale, staleSavedAt } from './state.js';
+import { state, indexStadiums, indexTeams, teamName, stadiumImagePath, setStale, anyStale, staleSavedAt, escapeHtml } from './state.js';
 import { iconMarkup } from './icons.js';
 import { teamFlagImg } from './flags.js';
 
@@ -81,18 +81,18 @@ function renderStadiums() {
       // Sin foto real disponible: se conserva el fondo degradado actual como
       // respaldo visual consistente, en vez de dejar una ruta rota.
       const photo = image
-        ? `<img class="stadium-btn-photo" src="${image}" alt="Fachada del estadio ${s.name_en}" loading="lazy">`
+        ? `<img class="stadium-btn-photo" src="${image}" alt="Fachada del estadio ${escapeHtml(s.name_en)}" loading="lazy">`
         : '';
 
       return `
-      <button class="stadium-btn image-overlay stadium-image-overlay" data-id="${s.id}" type="button">
+      <button class="stadium-btn image-overlay stadium-image-overlay" data-id="${escapeHtml(s.id)}" type="button">
         ${photo}
         <span class="icon-row">
           <span class="icon" aria-hidden="true">${iconMarkup('stadium')}</span>
         </span>
-        <span class="name">${s.name_en}</span>
-        <span class="city">${s.city_en}, ${s.country_en}</span>
-        <span class="cap">Aforo: ${Number(s.capacity).toLocaleString('es-CR')}</span>
+        <span class="name">${escapeHtml(s.name_en)}</span>
+        <span class="city">${escapeHtml(s.city_en)}, ${escapeHtml(s.country_en)}</span>
+        <span class="cap">Aforo: ${escapeHtml(Number(s.capacity).toLocaleString('es-CR'))}</span>
       </button>`;
     })
     .join('');
@@ -157,10 +157,10 @@ function renderGamesOfStadium(stadiumId) {
       const awayTeam = state.teamsById[String(g.away_team_id)];
       return `
       <div class="match-row">
-        <span class="team home">${g.home_team_label || teamName(g.home_team_id)}${homeTeam ? teamFlagImg(homeTeam) : ''}</span>
-        <span class="score">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
-        <span class="team away">${awayTeam ? teamFlagImg(awayTeam) : ''}${g.away_team_label || teamName(g.away_team_id)}</span>
-        <span class="meta">${g.local_date} · Jornada ${g.matchday} · Grupo ${g.group}</span>
+        <span class="team home">${homeTeam ? teamFlagImg(homeTeam) : ''}${escapeHtml(g.home_team_label || teamName(g.home_team_id))}</span>
+        <span class="score">${escapeHtml(g.home_score ?? '-')} : ${escapeHtml(g.away_score ?? '-')}</span>
+        <span class="team away">${awayTeam ? teamFlagImg(awayTeam) : ''}${escapeHtml(g.away_team_label || teamName(g.away_team_id))}</span>
+        <span class="meta">${escapeHtml(g.local_date)} · Jornada ${escapeHtml(g.matchday)} · Grupo ${escapeHtml(g.group)}</span>
       </div>`;
     })
     .join('');
