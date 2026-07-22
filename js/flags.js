@@ -99,7 +99,7 @@ export function getTeamFlag(team) {
 
 /**
  * Devuelve el markup <img> listo para insertar con innerHTML, con tamaño
- * fijo (evita saltos de layout), lazy loading y alt descriptivo.
+ * fijo (evita saltos de layout) y alt descriptivo.
  * @param {object} team
  * @param {{class?: string}} [opts]
  */
@@ -109,7 +109,13 @@ export function teamFlagImg(team, opts = {}) {
   // alt viene del nombre del equipo (dato de la API externa): se escapa
   // antes de interpolarlo en el atributo para evitar una fuga de HTML/
   // atributos si el valor trae comillas o símbolos "<", ">".
-  return `<img class="flag-icon${extraClass}" src="${src}" alt="${escapeHtml(alt)}" width="20" height="15" loading="lazy" decoding="async">`;
+  // Sin loading="lazy": son imágenes pequeñas (unas pocas KB, máximo 48 en
+  // toda la app) y varias vistas las insertan de una sola vez dentro de
+  // celdas de tabla (matriz de grupos); ahí el cálculo de "está en
+  // viewport" que usa loading="lazy" puede no dispararse nunca y la
+  // bandera se queda sin cargar. No vale la pena la carga diferida para
+  // algo tan liviano.
+  return `<img class="flag-icon${extraClass}" src="${src}" alt="${escapeHtml(alt)}" width="20" height="15" decoding="async">`;
 }
 
 /**
