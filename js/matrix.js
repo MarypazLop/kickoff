@@ -11,11 +11,26 @@
  * API nunca deje el contenedor en blanco sin explicación.
  */
 import { Endpoints } from './api.js';
-import { state, indexTeams, indexGroups } from './state.js';
+import { state, indexTeams, indexGroups, setStale, anyStale, staleSavedAt } from './state.js';
 import { iconMarkup } from './icons.js';
+import { teamFlagImg } from './flags.js';
 
 const containerEl = document.getElementById('matrix-container');
+const staleBadgeEl = document.getElementById('matrix-stale-badge');
 let gamesAvailable = false;
+
+function renderStaleBadge() {
+  if (!staleBadgeEl) return;
+  const stale = anyStale('teams', 'groups', 'games');
+  if (!stale) {
+    staleBadgeEl.classList.add('hidden');
+    staleBadgeEl.innerHTML = '';
+    return;
+  }
+  const savedAt = staleSavedAt('teams', 'groups', 'games');
+  staleBadgeEl.classList.remove('hidden');
+  staleBadgeEl.innerHTML = `<span class="badge badge-stale">Datos no actualizados${savedAt ? ' · ' + new Date(savedAt).toLocaleString('es-CR') : ''}</span>`;
+}
 
 export async function initMatrix() {
   containerEl.innerHTML = Array.from({ length: 3 })
@@ -24,12 +39,14 @@ export async function initMatrix() {
 
   try {
     if (!state.teams.length) {
-      const { data } = await Endpoints.teams();
+      const { data, stale, savedAt } = await Endpoints.teams();
       indexTeams(data.teams || data);
+      setStale('teams', stale, savedAt);
     }
     if (!state.groups.length) {
-      const { data } = await Endpoints.groups();
+      const { data, stale, savedAt } = await Endpoints.groups();
       indexGroups(data.groups || data);
+      setStale('groups', stale, savedAt);
     }
   } catch (err) {
     showBaseError();
@@ -44,8 +61,9 @@ export async function initMatrix() {
   // Los partidos pueden fallar de forma independiente: la matriz se dibuja igual.
   try {
     if (!state.games.length) {
-      const { data } = await Endpoints.games();
+      const { data, stale, savedAt } = await Endpoints.games();
       state.games = data.games || data;
+      setStale('games', stale, savedAt);
     }
     gamesAvailable = true;
   } catch (err) {
@@ -54,6 +72,7 @@ export async function initMatrix() {
 
   try {
     renderAllGroups();
+    renderStaleBadge();
   } catch (err) {
     console.error('Error dibujando la matriz de grupos:', err);
     showBaseError();
@@ -118,7 +137,7 @@ function renderAllGroups() {
         ${!gamesAvailable ? '<span class="badge badge-stale">Partidos no disponibles</span>' : ''}
       </h3>`;
 
-    const headRow = `<tr><th></th>${teams.map((t) => `<th>${t.fifa_code}</th>`).join('')}</tr>`;
+    const headRow = `<tr><th></th>${teams.map((t) => `<th title="${t.name_en}">${teamFlagImg(t)}<br>${t.fifa_code}</th>`).join('')}</tr>`;
 
     const bodyRows = teams
       .map((rowTeam) => {
@@ -131,7 +150,7 @@ function renderAllGroups() {
             return `<td class="${played ? 'played' : 'pending'}" data-row="${rowTeam.id}" data-col="${colTeam.id}">${text}</td>`;
           })
           .join('');
-        return `<tr><th>${rowTeam.fifa_code}</th>${cells}</tr>`;
+        return `<tr><th title="${rowTeam.name_en}">${teamFlagImg(rowTeam)}<br>${rowTeam.fifa_code}</th>${cells}</tr>`;
       })
       .join('');
 
@@ -159,8 +178,9 @@ function renderAllGroups() {
  *  la matriz completa NO se reconstruye desde cero. */
 async function refreshGamesOnly() {
   try {
-    const { data } = await Endpoints.games();
+    const { data, stale, savedAt } = await Endpoints.games();
     state.games = data.games || data;
+    setStale('games', stale, savedAt);
     gamesAvailable = true;
 
     document.querySelectorAll('.matrix-table td:not(.diagonal)').forEach((td) => {
@@ -170,8 +190,9 @@ async function refreshGamesOnly() {
       td.classList.toggle('played', played);
       td.classList.toggle('pending', !played);
     });
-    document.querySelectorAll('.badge-stale').forEach((b) => b.remove());
+    document.querySelectorAll('.group-block .badge-stale').forEach((b) => b.remove());
     document.getElementById('retry-matrix-games')?.closest('.inline-error')?.remove();
+    renderStaleBadge();
   } catch (err) {
     // Se mantiene el estado "Pendiente"; el usuario puede reintentar de nuevo.
   }

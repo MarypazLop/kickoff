@@ -5,25 +5,42 @@
  * clicables; solo la sección de partidos de esa sede muestra un error local.
  */
 import { Endpoints, ApiError } from './api.js';
-import { state, indexStadiums, indexTeams, teamName, stadiumImagePath } from './state.js';
+import { state, indexStadiums, indexTeams, teamName, stadiumImagePath, setStale, anyStale, staleSavedAt } from './state.js';
 import { iconMarkup } from './icons.js';
+import { teamFlagImg } from './flags.js';
 
 const listEl = document.getElementById('stadium-list');
 const gamesSection = document.getElementById('games-of-stadium');
 const gamesTitle = document.getElementById('games-of-stadium-title');
 const gamesBody = document.getElementById('games-of-stadium-body');
+const staleBadgeEl = document.getElementById('tour-stale-badge');
 
 let activeStadiumId = null;
 let gamesLoaded = false;
+
+function renderStaleBadge() {
+  if (!staleBadgeEl) return;
+  const stale = anyStale('stadiums', 'teams', 'games');
+  if (!stale) {
+    staleBadgeEl.classList.add('hidden');
+    staleBadgeEl.innerHTML = '';
+    return;
+  }
+  const savedAt = staleSavedAt('stadiums', 'teams', 'games');
+  staleBadgeEl.classList.remove('hidden');
+  staleBadgeEl.innerHTML = `<span class="badge badge-stale">Datos no actualizados${savedAt ? ' · ' + new Date(savedAt).toLocaleString('es-CR') : ''}</span>`;
+}
 
 export async function initTour() {
   renderStadiumsSkeleton();
   try {
     if (!state.stadiums.length) {
-      const { data } = await Endpoints.stadiums();
+      const { data, stale, savedAt } = await Endpoints.stadiums();
       indexStadiums(data.stadiums || data);
+      setStale('stadiums', stale, savedAt);
     }
     renderStadiums();
+    renderStaleBadge();
   } catch (err) {
     listEl.innerHTML = `<div class="inline-error">No se pudieron cargar las 16 sedes. <button class="btn btn-sm" id="retry-stadiums"><span class="icon" aria-hidden="true">${iconMarkup('refresh')}</span>Reintentar</button></div>`;
     document.getElementById('retry-stadiums')?.addEventListener('click', initTour);
@@ -33,14 +50,17 @@ export async function initTour() {
   // Precarga los partidos en segundo plano (no bloquea la navegación entre sedes)
   try {
     if (!state.games.length) {
-      const { data } = await Endpoints.games();
+      const { data, stale, savedAt } = await Endpoints.games();
       state.games = data.games || data;
+      setStale('games', stale, savedAt);
     }
     if (!state.teams.length) {
-      const { data } = await Endpoints.teams();
+      const { data, stale, savedAt } = await Endpoints.teams();
       indexTeams(data.teams || data);
+      setStale('teams', stale, savedAt);
     }
     gamesLoaded = true;
+    renderStaleBadge();
   } catch (err) {
     gamesLoaded = false;
   }
@@ -65,9 +85,8 @@ function renderStadiums() {
         : '';
 
       return `
-      <button class="stadium-btn" data-id="${s.id}" type="button">
+      <button class="stadium-btn image-overlay stadium-image-overlay" data-id="${s.id}" type="button">
         ${photo}
-        <span class="stadium-btn-overlay" aria-hidden="true"></span>
         <span class="icon-row">
           <span class="icon" aria-hidden="true">${iconMarkup('stadium')}</span>
         </span>
@@ -113,9 +132,11 @@ function renderGamesOfStadium(stadiumId) {
     document.getElementById('retry-games-of-stadium')?.addEventListener('click', async () => {
       gamesBody.innerHTML = `<div class="skeleton skeleton-games"></div>`;
       try {
-        const { data } = await Endpoints.games();
+        const { data, stale, savedAt } = await Endpoints.games();
         state.games = data.games || data;
+        setStale('games', stale, savedAt);
         gamesLoaded = true;
+        renderStaleBadge();
         renderGamesOfStadium(stadiumId);
       } catch (err) {
         renderGamesOfStadium(stadiumId);
@@ -131,14 +152,16 @@ function renderGamesOfStadium(stadiumId) {
   }
 
   gamesBody.innerHTML = games
-    .map(
-      (g) => `
+    .map((g) => {
+      const homeTeam = state.teamsById[String(g.home_team_id)];
+      const awayTeam = state.teamsById[String(g.away_team_id)];
+      return `
       <div class="match-row">
-        <span class="team home">${g.home_team_label || teamName(g.home_team_id)}</span>
+        <span class="team home">${g.home_team_label || teamName(g.home_team_id)}${homeTeam ? teamFlagImg(homeTeam) : ''}</span>
         <span class="score">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
-        <span class="team away">${g.away_team_label || teamName(g.away_team_id)}</span>
+        <span class="team away">${awayTeam ? teamFlagImg(awayTeam) : ''}${g.away_team_label || teamName(g.away_team_id)}</span>
         <span class="meta">${g.local_date} · Jornada ${g.matchday} · Grupo ${g.group}</span>
-      </div>`
-    )
+      </div>`;
+    })
     .join('');
 }

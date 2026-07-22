@@ -71,6 +71,42 @@
 }
 .field input:focus{ border-color: var(--accent); }
 
+/* ---------------------------- Banderas ---------------------------- */
+/* Tamaño e imagen consistentes en toda la app (dashboard, matriz, tour,
+   agenda, timeline). El ancho/alto fijos evitan saltos de layout mientras
+   carga la imagen; object-fit conserva la proporción real de la bandera. */
+.flag-icon{
+  width: 1.35em; height: 1.0125em; flex-shrink: 0;
+  object-fit: cover; border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  vertical-align: middle;
+  background: var(--surface-2);
+}
+.flag-icon-lg{ width: 2.2em; height: 1.65em; border-radius: 5px; }
+
+/* ---------------------------- Overlay verde sobre fotografías ---------------------------- */
+/* 9.1 — capa semitransparente verde muy oscura para banners, fondos de
+   tarjetas destacadas y fotografías de estadios/Tour. Se aplica con un
+   pseudoelemento ::before, así que nunca toca los píxeles originales de la
+   imagen ni el marcado de sus hijos (texto, botones, iconos).
+   NO usar sobre banderas, logos, isotipos, iconos SVG ni avatares. */
+.image-overlay{ position: relative; overflow: hidden; }
+.image-overlay::before{
+  content: ""; position: absolute; inset: 0; z-index: 1;
+  pointer-events: none; border-radius: inherit;
+  background: linear-gradient(135deg, rgba(7, 26, 20, .62), rgba(10, 38, 29, .48));
+}
+.image-overlay > *{ position: relative; z-index: 2; }
+
+.hero-overlay::before{
+  background: linear-gradient(160deg, rgba(7, 26, 20, .68), rgba(8, 32, 25, .5));
+}
+.stadium-image-overlay::before{
+  background:
+    radial-gradient(circle at 75% 20%, rgba(10, 38, 29, .22), transparent 28%),
+    linear-gradient(to top, rgba(7, 26, 20, .7) 8%, rgba(8, 32, 25, .42) 55%, rgba(10, 38, 29, .2) 100%);
+}
+
 /* ---------------------------- Chips (equipos) ---------------------------- */
 .team-chip{
   display: inline-flex; align-items: center; gap: .55em; padding: .45em .9em; border-radius: 999px;

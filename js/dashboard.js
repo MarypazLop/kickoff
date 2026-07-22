@@ -9,8 +9,9 @@
  * de ese equipo con aviso de "datos no actualizados", nunca un dashboard vacío.
  */
 import { Endpoints } from './api.js';
-import { state, indexTeams, indexGroups, setFavoriteTeam, flagColorsForTeam, normalizeText } from './state.js';
+import { state, indexTeams, indexGroups, setFavoriteTeam, flagColorsForTeam, normalizeText, setStale, anyStale, staleSavedAt } from './state.js';
 import { iconMarkup } from './icons.js';
+import { teamFlagImg } from './flags.js';
 
 const chipsEl = document.getElementById('team-chips');
 const panelEl = document.getElementById('dashboard-panel');
@@ -24,22 +25,21 @@ export async function initDashboard() {
     .map(() => `<div class="skeleton skeleton-chip"></div>`)
     .join(' ');
 
-  let stale = false;
   try {
     if (!state.teams.length) {
-      const { data, stale: s1 } = await Endpoints.teams();
+      const { data, stale, savedAt } = await Endpoints.teams();
       indexTeams(data.teams || data);
-      stale ||= s1;
+      setStale('teams', stale, savedAt);
     }
     if (!state.groups.length) {
-      const { data, stale: s2 } = await Endpoints.groups();
+      const { data, stale, savedAt } = await Endpoints.groups();
       indexGroups(data.groups || data);
-      stale ||= s2;
+      setStale('groups', stale, savedAt);
     }
     if (!state.games.length) {
-      const { data, stale: s3 } = await Endpoints.games();
+      const { data, stale, savedAt } = await Endpoints.games();
       state.games = data.games || data;
-      stale ||= s3;
+      setStale('games', stale, savedAt);
     }
   } catch (err) {
     panelEl.innerHTML = `
@@ -56,7 +56,7 @@ export async function initDashboard() {
 
   const saved = state.favoriteTeamId;
   if (saved && state.teamsById[saved]) {
-    selectTeam(saved, stale);
+    selectTeam(saved);
   } else {
     panelEl.innerHTML = `<p>Elige tu equipo favorito para ver su panel personalizado.</p>`;
   }
@@ -64,8 +64,13 @@ export async function initDashboard() {
 
 function renderChips() {
   const query = normalizeText(searchInput?.value || '');
+  // La búsqueda funciona por nombre completo, y también por código FIFA/ISO
+  // (mayúsculas, minúsculas y acentos ya normalizados por normalizeText).
   const filtered = query
-    ? state.teams.filter((t) => normalizeText(t.name_en).includes(query))
+    ? state.teams.filter((t) =>
+        normalizeText(t.name_en).includes(query) ||
+        normalizeText(t.fifa_code).includes(query)
+      )
     : state.teams;
 
   searchEmptyEl?.classList.toggle('hidden', filtered.length > 0);
@@ -76,7 +81,7 @@ function renderChips() {
       const [c1, c2] = flagColorsForTeam(t);
       return `
       <button type="button" class="team-chip" data-id="${t.id}" style="--c1:${c1};--c2:${c2}">
-        <span class="flag-dot"></span>${t.name_en}
+        ${teamFlagImg(t)}${t.name_en}
       </button>`;
     })
     .join('');
@@ -84,7 +89,7 @@ function renderChips() {
   chipsEl.querySelectorAll('.team-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
       setFavoriteTeam(chip.dataset.id);
-      selectTeam(chip.dataset.id, false);
+      selectTeam(chip.dataset.id);
     });
   });
   markActiveChip();
@@ -109,10 +114,17 @@ function markActiveChip() {
   });
 }
 
-function selectTeam(teamId, stale) {
+function selectTeam(teamId) {
   markActiveChip();
   const team = state.teamsById[teamId];
   if (!team) return;
+
+  // Indicador persistente: no depende de si ESTA llamada refrescó datos,
+  // sino de si algún recurso usado por este panel sigue sirviéndose desde
+  // caché (429/500/offline previo). Se mantiene visible entre cambios de
+  // equipo hasta que una petición fresca lo limpie.
+  const stale = anyStale('teams', 'groups', 'games');
+  const savedAt = staleSavedAt('teams', 'groups', 'games');
 
   const [c1, c2] = flagColorsForTeam(team);
   // Tematización dinámica: repinta las variables CSS del dashboard con los
@@ -131,11 +143,11 @@ function selectTeam(teamId, stale) {
   const group = state.groupsByName[groupLabel];
 
   panelEl.innerHTML = `
-    ${stale ? '<span class="badge badge-stale">Datos no actualizados</span>' : ''}
+    ${stale ? `<span class="badge badge-stale">Datos no actualizados${savedAt ? ' · ' + new Date(savedAt).toLocaleString('es-CR') : ''}</span>` : ''}
     <div class="dash-grid">
       <div class="card">
         <div class="team-header">
-          <span class="flag-dot"></span>
+          ${teamFlagImg(team, { class: 'flag-icon-lg' })}
           <h3>${team.name_en}</h3>
         </div>
         <p class="text-muted">Grupo ${groupLabel || '—'} · Código FIFA ${team.fifa_code}</p>
@@ -156,7 +168,7 @@ function renderStanding(group, teamId) {
       const isSelf = String(row.team_id) === String(teamId);
       return `
       <div class="standing-row ${isSelf ? 'self' : ''}">
-        <span>${t ? t.fifa_code : row.team_id}</span>
+        <span>${t ? teamFlagImg(t) : ''}${t ? t.fifa_code : row.team_id}</span>
         <span>${t ? t.name_en : row.team_id}</span>
         <span>${row.pts} pts</span>
         <span>${row.gf} GF</span>
@@ -174,6 +186,8 @@ function renderTeamGames(games, teamId) {
   return games
     .map((g) => {
       const isHome = String(g.home_team_id) === String(teamId);
+      const rivalId = isHome ? g.away_team_id : g.home_team_id;
+      const rivalTeam = state.teamsById[String(rivalId)];
       const rival = isHome
         ? g.away_team_label || teamNameSafe(g.away_team_id)
         : g.home_team_label || teamNameSafe(g.home_team_id);
@@ -181,7 +195,7 @@ function renderTeamGames(games, teamId) {
       <div class="match-row">
         <span class="team home">${isHome ? 'Local' : 'Visitante'}</span>
         <span class="score">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
-        <span class="team away">vs ${rival}</span>
+        <span class="team away">${rivalTeam ? teamFlagImg(rivalTeam) : ''}vs ${rival}</span>
         <span class="meta">${g.local_date}</span>
       </div>`;
     })

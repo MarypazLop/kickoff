@@ -8,11 +8,13 @@
  * sin duplicar partidos ya insertados.
  */
 import { Endpoints } from './api.js';
-import { state, indexTeams, teamName } from './state.js';
+import { state, indexTeams, teamName, setStale, anyStale, staleSavedAt } from './state.js';
 import { iconMarkup } from './icons.js';
+import { teamFlagImg } from './flags.js';
 
 const containerEl = document.getElementById('timeline-container');
 const statusEl = document.getElementById('timeline-status');
+const staleBadgeEl = document.getElementById('timeline-stale-badge');
 
 const BLOCK_SIZE = 10;
 
@@ -29,17 +31,24 @@ export async function initTimeline() {
 
   try {
     if (!state.teams.length) {
-      const { data: teamsData } = await Endpoints.teams();
+      const { data: teamsData, stale, savedAt } = await Endpoints.teams();
       indexTeams(teamsData.teams || teamsData);
+      setStale('teams', stale, savedAt);
     }
-    const { data } = await Endpoints.games();
-    const games = data.games || data;
+    // Los partidos ya podrían estar en memoria (otra vista los cargó antes);
+    // se evita pedirlos de nuevo para no duplicar peticiones al mismo endpoint.
+    if (!state.games.length) {
+      const { data, stale, savedAt } = await Endpoints.games();
+      state.games = data.games || data;
+      setStale('games', stale, savedAt);
+    }
 
-    sortedGames = games
+    sortedGames = state.games
       .slice()
       .sort((a, b) => new Date(a.local_date) - new Date(b.local_date));
 
     startProgressiveInsertion();
+    renderStaleBadge();
   } catch (err) {
     statusEl.innerHTML = `
       No se pudo cargar el calendario del torneo.
@@ -53,6 +62,19 @@ function resetTimelineDOM() {
   containerEl.innerHTML = '';
   insertedCount = 0;
   insertedIds = new Set();
+}
+
+function renderStaleBadge() {
+  if (!staleBadgeEl) return;
+  const stale = anyStale('teams', 'games');
+  if (!stale) {
+    staleBadgeEl.classList.add('hidden');
+    staleBadgeEl.innerHTML = '';
+    return;
+  }
+  const savedAt = staleSavedAt('teams', 'games');
+  staleBadgeEl.classList.remove('hidden');
+  staleBadgeEl.innerHTML = `<span class="badge badge-stale">Datos no actualizados${savedAt ? ' · ' + new Date(savedAt).toLocaleString('es-CR') : ''}</span>`;
 }
 
 function startProgressiveInsertion() {
@@ -103,12 +125,14 @@ function insertNextBlock() {
     if (insertedIds.has(g.id)) return;
     insertedIds.add(g.id);
 
+    const homeTeam = state.teamsById[String(g.home_team_id)];
+    const awayTeam = state.teamsById[String(g.away_team_id)];
     const row = document.createElement('div');
     row.className = 'match-row';
     row.innerHTML = `
-      <span class="team home">${g.home_team_label || teamName(g.home_team_id)}</span>
+      <span class="team home">${g.home_team_label || teamName(g.home_team_id)}${homeTeam ? teamFlagImg(homeTeam) : ''}</span>
       <span class="score">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
-      <span class="team away">${g.away_team_label || teamName(g.away_team_id)}</span>
+      <span class="team away">${awayTeam ? teamFlagImg(awayTeam) : ''}${g.away_team_label || teamName(g.away_team_id)}</span>
       <span class="meta">${g.local_date} · Grupo ${g.group}</span>`;
     block.appendChild(row);
   });

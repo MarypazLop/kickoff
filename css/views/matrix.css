@@ -17,7 +17,8 @@
 
 .matrix-table{ border-collapse: collapse; width: 100%; font-size: .78rem; }
 .matrix-table th, .matrix-table td{ border: 1px solid var(--border); padding: .55em; text-align: center; }
-.matrix-table th{ background: var(--bg-elevated); color: var(--text-muted); font-weight: 600; }
+.matrix-table th{ background: var(--bg-elevated); color: var(--text-muted); font-weight: 600; line-height: 1.6; }
+.matrix-table th .flag-icon{ margin-bottom: .15em; }
 .matrix-table td{ background: var(--surface); font-family: var(--f-mono); color: var(--text-muted); }
 .matrix-table td.diagonal{
   background: repeating-linear-gradient(45deg, var(--bg-elevated), var(--bg-elevated) 4px, var(--surface) 4px, var(--surface) 8px);

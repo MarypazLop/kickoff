@@ -12,7 +12,33 @@ export const state = {
   groupsByName: {},
   games: [],
   favoriteTeamId: localStorage.getItem('wc2026_favorite_team') || null,
+  // Indicador persistente por recurso: una vez marcado "stale" (servido
+  // desde caché por un 429/500/offline), se mantiene así aunque el usuario
+  // cambie de vista, hasta que una petición fresca lo limpie explícitamente.
+  stale: { teams: false, stadiums: false, groups: false, games: false },
+  staleSavedAt: { teams: null, stadiums: null, groups: null, games: null },
 };
+
+/** Marca (o limpia) el indicador persistente de "datos no actualizados"
+ *  de un recurso. Se llama tras CADA fetch (exitoso o servido desde caché),
+ *  nunca cuando la vista solo reutiliza datos ya cargados en memoria. */
+export function setStale(resource, value, savedAt = null) {
+  if (!(resource in state.stale)) return;
+  state.stale[resource] = Boolean(value);
+  state.staleSavedAt[resource] = value ? savedAt : null;
+}
+
+/** true si cualquiera de los recursos indicados está marcado como stale. */
+export function anyStale(...resources) {
+  return resources.some((r) => state.stale[r]);
+}
+
+/** La fecha de guardado más reciente entre los recursos indicados que
+ *  estén marcados como stale (para mostrarla en la insignia). */
+export function staleSavedAt(...resources) {
+  const dates = resources.map((r) => state.staleSavedAt[r]).filter(Boolean);
+  return dates.length ? Math.max(...dates) : null;
+}
 
 export function indexTeams(list) {
   state.teams = Array.isArray(list) ? [...list] : [];

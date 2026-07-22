@@ -20,6 +20,7 @@ const BASE_URL = '/api';
 const TOKEN_KEY = 'wc2026_token';
 const USER_KEY = 'wc2026_user';
 const CACHE_PREFIX = 'wc2026_cache_';
+const CACHE_VERSION = 1;
 const MAX_RETRIES = 4;               // 1s, 2s, 4s, 8s
 const BASE_DELAY_MS = 1000;
 
@@ -63,7 +64,7 @@ function readCache(path) {
   const raw = localStorage.getItem(cacheKey(path));
   if (!raw) return null;
   try {
-    return JSON.parse(raw); // { data, savedAt }
+    return JSON.parse(raw); // { data, savedAt, path, version }
   } catch {
     return null;
   }
@@ -73,7 +74,7 @@ function writeCache(path, data) {
   try {
     localStorage.setItem(
       cacheKey(path),
-      JSON.stringify({ data, savedAt: Date.now() })
+      JSON.stringify({ data, path, savedAt: Date.now(), version: CACHE_VERSION })
     );
   } catch {
     /* localStorage lleno o no disponible: se ignora silenciosamente */
@@ -109,30 +110,36 @@ async function countdown(seconds, meta) {
  * @returns {Promise<{data:any, fromCache:boolean, stale:boolean}>}
  */
 export async function apiGet(path, opts = {}) {
-  const token = getToken();
   let attempt = 0;
+  console.info(`[API] GET ${path}`);
 
   while (true) {
     try {
-      const response = await fetch(BASE_URL + path, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const token = getToken();
+      const headers = {};
+      // Nunca se envía "Bearer null"/"Bearer undefined": si no hay token,
+      // simplemente se omite el encabezado Authorization.
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch(BASE_URL + path, { method: 'GET', headers });
 
       if (response.status === 401) {
+        console.warn(`[API] HTTP 401 en ${path}`);
         clearSession();
+        console.warn('[AUTH] Sesión eliminada por respuesta 401');
         emit('session-expired');
         throw new ApiError('SESSION_EXPIRED', 401, path);
       }
 
       if (response.status === 429 || response.status >= 500) {
+        console.warn(`[API] HTTP ${response.status} en ${path}`);
         if (attempt >= MAX_RETRIES) {
+          console.error(`[API] Reintentos agotados para ${path}`);
           return fallbackOrThrow(path, response.status);
         }
         const delaySeconds = (BASE_DELAY_MS * 2 ** attempt) / 1000;
         attempt += 1;
+        console.warn(`[API] Reintento ${attempt} de ${MAX_RETRIES} en ${delaySeconds} segundo${delaySeconds === 1 ? '' : 's'}`);
 
         if (!opts.silentRetry) {
           emit('retry-start', {
@@ -152,6 +159,7 @@ export async function apiGet(path, opts = {}) {
 
       if (!response.ok) {
         // 400 / 404 / otros errores no recuperables por reintento
+        console.error(`[API] HTTP ${response.status} en ${path} (error no recuperable)`);
         throw new ApiError('HTTP_ERROR', response.status, path);
       }
 
@@ -161,11 +169,14 @@ export async function apiGet(path, opts = {}) {
     } catch (err) {
       if (err instanceof ApiError) throw err;
       // Error de red (offline, DNS, CORS, etc.) -> tratamos como recuperable
+      console.warn(`[API] Error de red en ${path}: ${err.message || err}`);
       if (attempt >= MAX_RETRIES) {
+        console.error(`[API] Reintentos agotados para ${path}`);
         return fallbackOrThrow(path, 0);
       }
       const delaySeconds = (BASE_DELAY_MS * 2 ** attempt) / 1000;
       attempt += 1;
+      console.warn(`[API] Reintento ${attempt} de ${MAX_RETRIES} en ${delaySeconds} segundo${delaySeconds === 1 ? '' : 's'}`);
       if (!opts.silentRetry) {
         emit('retry-start', {
           path,
@@ -186,9 +197,11 @@ export async function apiGet(path, opts = {}) {
 function fallbackOrThrow(path, status) {
   const cached = readCache(path);
   if (cached) {
+    console.info(`[CACHE] Mostrando datos no actualizados de ${path} (guardados ${new Date(cached.savedAt).toLocaleString('es-CR')})`);
     emit('serving-stale', { path, savedAt: cached.savedAt });
-    return { data: cached.data, fromCache: true, stale: true };
+    return { data: cached.data, fromCache: true, stale: true, savedAt: cached.savedAt };
   }
+  console.error(`[CACHE] No hay datos en caché para ${path}`);
   throw new ApiError('EXHAUSTED_RETRIES', status, path);
 }
 
