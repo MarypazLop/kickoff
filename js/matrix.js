@@ -19,7 +19,7 @@ let gamesAvailable = false;
 
 export async function initMatrix() {
   containerEl.innerHTML = Array.from({ length: 3 })
-    .map(() => `<div class="skeleton" style="height:160px;margin-bottom:1rem"></div>`)
+    .map(() => `<div class="skeleton skeleton-group"></div>`)
     .join('');
 
   try {
@@ -91,11 +91,11 @@ function renderAllGroups() {
   containerEl.innerHTML = '';
 
   // Defensivo: algunos grupos podrían no traer el campo "group" bien formado;
-  // se filtran y se ordena sin asumir que siempre es un string válido.
+  // se filtran y se ordena por el nombre de grupo ya resuelto (ver state.js).
   const groups = state.groups
     .filter((g) => g && Array.isArray(g.teams) && g.teams.length)
     .slice()
-    .sort((a, b) => String(a.group ?? '').localeCompare(String(b.group ?? '')));
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   if (!groups.length) {
     showBaseError();
@@ -109,13 +109,12 @@ function renderAllGroups() {
 
     const block = document.createElement('div');
     block.className = 'group-block';
-    block.dataset.group = group.group ?? '';
+    block.dataset.group = group.label;
 
-    const groupLabel = group.group ?? '?';
     const header = `
       <h3>
-        <span class="group-letter">${groupLabel}</span>
-        Grupo ${groupLabel}
+        <span class="group-letter">${group.label}</span>
+        Grupo ${group.label}
         ${!gamesAvailable ? '<span class="badge badge-stale">Partidos no disponibles</span>' : ''}
       </h3>`;
 
@@ -149,8 +148,7 @@ function renderAllGroups() {
 
   if (!gamesAvailable) {
     const retryBar = document.createElement('div');
-    retryBar.className = 'inline-error';
-    retryBar.style.marginTop = '1rem';
+    retryBar.className = 'inline-error mt-1';
     retryBar.innerHTML = `Los resultados no están disponibles. <button class="btn btn-sm" id="retry-matrix-games"><span class="icon" aria-hidden="true">${iconMarkup('refresh')}</span>Reintentar partidos</button>`;
     containerEl.appendChild(retryBar);
     document.getElementById('retry-matrix-games')?.addEventListener('click', refreshGamesOnly);

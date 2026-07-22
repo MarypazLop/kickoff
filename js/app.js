@@ -63,7 +63,7 @@ document.getElementById('logout-btn')?.addEventListener('click', () => {
   clearSession();
   initialized.clear();
   document.getElementById('app').classList.remove('active');
-  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('auth-screen').classList.remove('hidden');
 });
 
 function bootApp() {

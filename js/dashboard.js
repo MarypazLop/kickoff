@@ -9,7 +9,7 @@
  * de ese equipo con aviso de "datos no actualizados", nunca un dashboard vacío.
  */
 import { Endpoints } from './api.js';
-import { state, indexTeams, indexGroups, setFavoriteTeam, flagColorsForTeam } from './state.js';
+import { state, indexTeams, indexGroups, setFavoriteTeam, flagColorsForTeam, normalizeText } from './state.js';
 import { iconMarkup } from './icons.js';
 
 const chipsEl = document.getElementById('team-chips');
@@ -19,17 +19,9 @@ const searchInput = document.getElementById('team-search-input');
 const searchClearBtn = document.getElementById('team-search-clear');
 const searchEmptyEl = document.getElementById('team-search-empty');
 
-/** Quita acentos/diacríticos y pasa a minúsculas, para comparar de forma tolerante. */
-function normalize(str) {
-  return (str || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
 export async function initDashboard() {
   chipsEl.innerHTML = Array.from({ length: 12 })
-    .map(() => `<div class="skeleton" style="height:34px;width:96px;display:inline-block;border-radius:999px"></div>`)
+    .map(() => `<div class="skeleton skeleton-chip"></div>`)
     .join(' ');
 
   let stale = false;
@@ -71,9 +63,9 @@ export async function initDashboard() {
 }
 
 function renderChips() {
-  const query = normalize(searchInput?.value || '');
+  const query = normalizeText(searchInput?.value || '');
   const filtered = query
-    ? state.teams.filter((t) => normalize(t.name_en).includes(query))
+    ? state.teams.filter((t) => normalizeText(t.name_en).includes(query))
     : state.teams;
 
   searchEmptyEl?.classList.toggle('hidden', filtered.length > 0);
@@ -132,8 +124,11 @@ function selectTeam(teamId, stale) {
     (g) => String(g.home_team_id) === String(teamId) || String(g.away_team_id) === String(teamId)
   );
 
-  const group = state.groupsByName[team.groups];
-  const standingRow = group ? group.teams.find((t) => String(t.team_id) === String(teamId)) : null;
+  // El grupo del propio equipo puede venir en distinta mayúscula/minúscula
+  // que las etiquetas ya resueltas en indexGroups(), así que se normaliza
+  // antes de buscarlo.
+  const groupLabel = String(team.groups || '').trim().toUpperCase();
+  const group = state.groupsByName[groupLabel];
 
   panelEl.innerHTML = `
     ${stale ? '<span class="badge badge-stale">Datos no actualizados</span>' : ''}
@@ -143,7 +138,7 @@ function selectTeam(teamId, stale) {
           <span class="flag-dot"></span>
           <h3>${team.name_en}</h3>
         </div>
-        <p class="text-muted">Grupo ${team.groups} · Código FIFA ${team.fifa_code}</p>
+        <p class="text-muted">Grupo ${groupLabel || '—'} · Código FIFA ${team.fifa_code}</p>
         ${renderStanding(group, teamId)}
       </div>
       <div class="card">

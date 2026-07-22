@@ -18,3 +18,6 @@
 .stadium-btn .cap{ font-family: var(--f-mono); font-size: .72rem; color: var(--text-muted); }
 
 #games-of-stadium{ margin-top: 1.75rem; scroll-margin-top: 1.5rem; }
+
+.skeleton-stadium{ height: 88px; }
+.skeleton-games{ height: 60px; }

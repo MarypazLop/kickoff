@@ -3,6 +3,8 @@
    ========================================================= */
 
 .group-block{ margin-bottom: 2rem; }
+
+.skeleton-group{ height: 160px; margin-bottom: 1rem; }
 .group-block h3{
   font-size: 1.05rem; margin-bottom: .7rem; display: flex; align-items: center; gap: .6em;
   text-transform: none; letter-spacing: 0; font-family: var(--f-body); font-weight: 700;

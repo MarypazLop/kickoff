@@ -41,7 +41,7 @@ export function onAuthSuccess(callback) {
 let authSuccessCallback = () => {};
 
 function enterApp(user) {
-  authScreen.style.display = 'none';
+  authScreen.classList.add('hidden');
   appEl.classList.add('active');
   document.getElementById('user-name').textContent = user?.name || 'Estudiante';
   authSuccessCallback();

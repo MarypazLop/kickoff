@@ -54,7 +54,7 @@ reauthBtn.addEventListener('click', () => {
   modal.classList.remove('show');
   // Vuelve a la pantalla de autenticación SIN recargar la página.
   document.getElementById('app').classList.remove('active');
-  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('auth-screen').classList.remove('hidden');
   document.getElementById('login-email').focus();
 });
 

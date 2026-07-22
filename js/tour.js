@@ -5,7 +5,7 @@
  * clicables; solo la sección de partidos de esa sede muestra un error local.
  */
 import { Endpoints, ApiError } from './api.js';
-import { state, indexStadiums, indexTeams, teamName } from './state.js';
+import { state, indexStadiums, indexTeams, teamName, stadiumImagePath } from './state.js';
 import { iconMarkup } from './icons.js';
 
 const listEl = document.getElementById('stadium-list');
@@ -50,23 +50,32 @@ export async function initTour() {
 
 function renderStadiumsSkeleton() {
   listEl.innerHTML = Array.from({ length: 8 })
-    .map(() => `<div class="skeleton" style="height:88px"></div>`)
+    .map(() => `<div class="skeleton skeleton-stadium"></div>`)
     .join('');
 }
 
 function renderStadiums() {
   listEl.innerHTML = state.stadiums
-    .map(
-      (s) => `
+    .map((s) => {
+      const image = stadiumImagePath(s);
+      // Sin foto real disponible: se conserva el fondo degradado actual como
+      // respaldo visual consistente, en vez de dejar una ruta rota.
+      const photo = image
+        ? `<img class="stadium-btn-photo" src="${image}" alt="Fachada del estadio ${s.name_en}" loading="lazy">`
+        : '';
+
+      return `
       <button class="stadium-btn" data-id="${s.id}" type="button">
+        ${photo}
+        <span class="stadium-btn-overlay" aria-hidden="true"></span>
         <span class="icon-row">
           <span class="icon" aria-hidden="true">${iconMarkup('stadium')}</span>
         </span>
         <span class="name">${s.name_en}</span>
         <span class="city">${s.city_en}, ${s.country_en}</span>
         <span class="cap">Aforo: ${Number(s.capacity).toLocaleString('es-CR')}</span>
-      </button>`
-    )
+      </button>`;
+    })
     .join('');
 
   listEl.querySelectorAll('.stadium-btn').forEach((btn) => {
@@ -102,7 +111,7 @@ function renderGamesOfStadium(stadiumId) {
         <button class="btn btn-sm" id="retry-games-of-stadium"><span class="icon" aria-hidden="true">${iconMarkup('refresh')}</span>Reintentar</button>
       </div>`;
     document.getElementById('retry-games-of-stadium')?.addEventListener('click', async () => {
-      gamesBody.innerHTML = `<div class="skeleton" style="height:60px"></div>`;
+      gamesBody.innerHTML = `<div class="skeleton skeleton-games"></div>`;
       try {
         const { data } = await Endpoints.games();
         state.games = data.games || data;

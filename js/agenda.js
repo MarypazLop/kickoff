@@ -57,7 +57,7 @@ export async function initAgenda() {
 function renderSkeletonCalendar() {
   monthLabelEl.textContent = 'Cargando…';
   gridEl.innerHTML = Array.from({ length: 35 })
-    .map(() => `<div class="skeleton" style="aspect-ratio:1"></div>`)
+    .map(() => `<div class="skeleton skeleton-day"></div>`)
     .join('');
 }
 
@@ -65,7 +65,7 @@ function renderCalendarError() {
   monthLabelEl.textContent = 'Sin datos';
   gridEl.innerHTML = '';
   columnsEl.innerHTML = `
-    <div class="inline-error" style="grid-column:1/-1">
+    <div class="inline-error inline-error-span">
       No hay datos en caché ni conexión disponible para construir el calendario.
       <button class="btn btn-sm" id="retry-agenda"><span class="icon" aria-hidden="true">${iconMarkup('refresh')}</span>Reintentar</button>
     </div>`;
@@ -149,9 +149,9 @@ function renderSelectedDay() {
       (g, i) => `
       <div class="simul-col">
         <h4>Partido ${i + 1} · ${g.local_date.split(' ')[1] || ''}</h4>
-        <div class="match-row" style="grid-template-columns:1fr;text-align:center">
+        <div class="match-row match-row-stacked">
           <span class="team">${g.home_team_label || teamName(g.home_team_id)}</span>
-          <span class="score" style="justify-self:center;margin:.35em 0">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
+          <span class="score">${g.home_score ?? '-'} : ${g.away_score ?? '-'}</span>
           <span class="team">${g.away_team_label || teamName(g.away_team_id)}</span>
           <span class="meta">Grupo ${g.group} · Jornada ${g.matchday}</span>
         </div>

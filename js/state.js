@@ -29,8 +29,73 @@ export function indexStadiums(list) {
 }
 
 export function indexGroups(list) {
-  state.groups = Array.isArray(list) ? list : [];
-  state.groupsByName = Object.fromEntries(state.groups.map((g) => [g.group, g]));
+  const rawGroups = Array.isArray(list) ? list : [];
+  // Cada grupo se re-etiqueta una sola vez aquí, así matrix.js y dashboard.js
+  // nunca necesitan saber cuál era el nombre exacto del campo en la API.
+  state.groups = rawGroups.map((group, index) => ({
+    ...group,
+    label: resolveGroupLabel(group, index),
+  }));
+  state.groupsByName = Object.fromEntries(state.groups.map((g) => [g.label, g]));
+}
+
+/**
+ * Resuelve el identificador real de un grupo (A, B, C…) sin asumir un único
+ * nombre de campo. Se intentan, en orden, los nombres más comunes que puede
+ * usar la API (`group`, `groupName`, `name`, `letter`, `code`); solo cuando
+ * ninguno trae un valor utilizable se genera una letra por posición (A, B, C…),
+ * y únicamente como último recurso.
+ */
+export function resolveGroupLabel(group, index = 0) {
+  const candidates = [group?.group, group?.groupName, group?.name, group?.letter, group?.code];
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) continue;
+    const value = String(candidate).trim();
+    if (value) return value.toUpperCase();
+  }
+  return String.fromCharCode(65 + index);
+}
+
+/** Compara ignorando mayúsculas/minúsculas y acentos (búsquedas, filtros). */
+export function normalizeText(str) {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+/* -------------------------------------------------------------------------
+ * Fotos reales de sedes. Cada estadio del Mundial 2026 ya tiene su imagen en
+ * assets/images; se relaciona por palabra clave (tolerante a acentos y
+ * mayúsculas) en vez de por id, para no depender de que el nombre de la API
+ * coincida carácter a carácter con el nombre del archivo.
+ * ---------------------------------------------------------------------- */
+const STADIUM_IMAGES_DIR = 'assets/images/';
+const STADIUM_IMAGE_KEYWORDS = [
+  ['azteca', 'azteca.webp'],
+  ['akron', 'akron.webp'],
+  ['bbva', 'bbva.webp'],
+  ['bc place', 'bcplace.webp'],
+  ['bmo', 'bmo.webp'],
+  ['lumen', 'lumenfield.webp'],
+  ['hard rock', 'hardrock-stadium.webp'],
+  ['levi', 'levis-stadium.webp'],
+  ['at&t', 'AT&T.webp'],
+  ['att stadium', 'AT&T.webp'],
+  ['arrowhead', 'arrowhead.webp'],
+  ['gillette', 'gillette.webp'],
+  ['lincoln', 'lincoln.webp'],
+  ['mercedes', 'mercedes-benz.webp'],
+  ['metlife', 'metlife.webp'],
+  ['nrg', 'nrg.webp'],
+  ['sofi', 'sofi.webp'],
+];
+
+/** Devuelve la ruta de la foto real del estadio, o null si no hay coincidencia. */
+export function stadiumImagePath(stadium) {
+  const name = normalizeText(stadium?.name_en);
+  const match = STADIUM_IMAGE_KEYWORDS.find(([keyword]) => name.includes(keyword));
+  return match ? `${STADIUM_IMAGES_DIR}${match[1]}` : null;
 }
 
 export function setFavoriteTeam(teamId) {
