@@ -13,7 +13,6 @@
 import { Endpoints } from './api.js';
 import { state, indexTeams, indexGroups, setStale, anyStale, staleSavedAt, escapeHtml } from './state.js';
 import { iconMarkup } from './icons.js';
-import { teamFlagImg } from './flags.js';
 
 const containerEl = document.getElementById('matrix-container');
 const staleBadgeEl = document.getElementById('matrix-stale-badge');
@@ -137,7 +136,7 @@ function renderAllGroups() {
         ${!gamesAvailable ? '<span class="badge badge-stale">Partidos no disponibles</span>' : ''}
       </h3>`;
 
-    const headRow = `<tr><th></th>${teams.map((t) => `<th title="${escapeHtml(t.name_en)}">${teamFlagImg(t)}<br>${escapeHtml(t.fifa_code)}</th>`).join('')}</tr>`;
+    const headRow = `<tr><th></th>${teams.map((t) => `<th title="${escapeHtml(t.name_en)}">${escapeHtml(t.fifa_code)}</th>`).join('')}</tr>`;
 
     const bodyRows = teams
       .map((rowTeam) => {
@@ -150,7 +149,7 @@ function renderAllGroups() {
             return `<td class="${played ? 'played' : 'pending'}" data-row="${escapeHtml(rowTeam.id)}" data-col="${escapeHtml(colTeam.id)}">${text}</td>`;
           })
           .join('');
-        return `<tr><th title="${escapeHtml(rowTeam.name_en)}">${teamFlagImg(rowTeam)}<br>${escapeHtml(rowTeam.fifa_code)}</th>${cells}</tr>`;
+        return `<tr><th title="${escapeHtml(rowTeam.name_en)}">${escapeHtml(rowTeam.fifa_code)}</th>${cells}</tr>`;
       })
       .join('');
 

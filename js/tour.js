@@ -7,7 +7,6 @@
 import { Endpoints, ApiError } from './api.js';
 import { state, indexStadiums, indexTeams, teamName, stadiumImagePath, setStale, anyStale, staleSavedAt, escapeHtml } from './state.js';
 import { iconMarkup } from './icons.js';
-import { teamFlagImg } from './flags.js';
 
 const listEl = document.getElementById('stadium-list');
 const gamesSection = document.getElementById('games-of-stadium');
@@ -152,16 +151,12 @@ function renderGamesOfStadium(stadiumId) {
   }
 
   gamesBody.innerHTML = games
-    .map((g) => {
-      const homeTeam = state.teamsById[String(g.home_team_id)];
-      const awayTeam = state.teamsById[String(g.away_team_id)];
-      return `
+    .map((g) => `
       <div class="match-row">
-        <span class="team home">${homeTeam ? teamFlagImg(homeTeam) : ''}${escapeHtml(g.home_team_label || teamName(g.home_team_id))}</span>
+        <span class="team home">${escapeHtml(g.home_team_label || teamName(g.home_team_id))}</span>
         <span class="score">${escapeHtml(g.home_score ?? '-')} : ${escapeHtml(g.away_score ?? '-')}</span>
-        <span class="team away">${awayTeam ? teamFlagImg(awayTeam) : ''}${escapeHtml(g.away_team_label || teamName(g.away_team_id))}</span>
+        <span class="team away">${escapeHtml(g.away_team_label || teamName(g.away_team_id))}</span>
         <span class="meta">${escapeHtml(g.local_date)} · Jornada ${escapeHtml(g.matchday)} · Grupo ${escapeHtml(g.group)}</span>
-      </div>`;
-    })
+      </div>`)
     .join('');
 }

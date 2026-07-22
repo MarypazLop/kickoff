@@ -186,8 +186,6 @@ function renderTeamGames(games, teamId) {
   return games
     .map((g) => {
       const isHome = String(g.home_team_id) === String(teamId);
-      const rivalId = isHome ? g.away_team_id : g.home_team_id;
-      const rivalTeam = state.teamsById[String(rivalId)];
       const rival = isHome
         ? g.away_team_label || teamNameSafe(g.away_team_id)
         : g.home_team_label || teamNameSafe(g.home_team_id);
@@ -195,7 +193,7 @@ function renderTeamGames(games, teamId) {
       <div class="match-row">
         <span class="team home">${isHome ? 'Local' : 'Visitante'}</span>
         <span class="score">${escapeHtml(g.home_score ?? '-')} : ${escapeHtml(g.away_score ?? '-')}</span>
-        <span class="team away">vs ${rivalTeam ? teamFlagImg(rivalTeam) : ''}${escapeHtml(rival)}</span>
+        <span class="team away">vs ${escapeHtml(rival)}</span>
         <span class="meta">${escapeHtml(g.local_date)}</span>
       </div>`;
     })

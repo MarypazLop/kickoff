@@ -8,7 +8,6 @@
 import { Endpoints } from './api.js';
 import { state, indexTeams, teamName, setStale, anyStale, staleSavedAt, escapeHtml } from './state.js';
 import { iconMarkup } from './icons.js';
-import { teamFlagImg } from './flags.js';
 
 const monthLabelEl = document.getElementById('calendar-month-label');
 const gridEl = document.getElementById('calendar-grid');
@@ -197,20 +196,16 @@ function renderSelectedDay() {
   selectedDateEl.textContent = `${dd}/${mm}/${yyyy} · ${games.length} partidos simultáneos`;
 
   columnsEl.innerHTML = games
-    .map((g, i) => {
-      const homeTeam = state.teamsById[String(g.home_team_id)];
-      const awayTeam = state.teamsById[String(g.away_team_id)];
-      return `
+    .map((g, i) => `
       <div class="simul-col">
         <h4>Partido ${i + 1} · ${escapeHtml(g.local_date.split(' ')[1] || '')}</h4>
         <div class="match-row match-row-stacked">
-          <span class="team">${homeTeam ? teamFlagImg(homeTeam) : ''}${escapeHtml(g.home_team_label || teamName(g.home_team_id))}</span>
+          <span class="team">${escapeHtml(g.home_team_label || teamName(g.home_team_id))}</span>
           <span class="score">${escapeHtml(g.home_score ?? '-')} : ${escapeHtml(g.away_score ?? '-')}</span>
-          <span class="team">${awayTeam ? teamFlagImg(awayTeam) : ''}${escapeHtml(g.away_team_label || teamName(g.away_team_id))}</span>
+          <span class="team">${escapeHtml(g.away_team_label || teamName(g.away_team_id))}</span>
           <span class="meta">Grupo ${escapeHtml(g.group)} · Jornada ${escapeHtml(g.matchday)}</span>
         </div>
-      </div>`;
-    })
+      </div>`)
     .join('');
 }
 

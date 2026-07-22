@@ -10,7 +10,6 @@
 import { Endpoints } from './api.js';
 import { state, indexTeams, teamName, setStale, anyStale, staleSavedAt, escapeHtml } from './state.js';
 import { iconMarkup } from './icons.js';
-import { teamFlagImg } from './flags.js';
 
 const containerEl = document.getElementById('timeline-container');
 const statusEl = document.getElementById('timeline-status');
@@ -125,14 +124,12 @@ function insertNextBlock() {
     if (insertedIds.has(g.id)) return;
     insertedIds.add(g.id);
 
-    const homeTeam = state.teamsById[String(g.home_team_id)];
-    const awayTeam = state.teamsById[String(g.away_team_id)];
     const row = document.createElement('div');
     row.className = 'match-row';
     row.innerHTML = `
-      <span class="team home">${homeTeam ? teamFlagImg(homeTeam) : ''}${escapeHtml(g.home_team_label || teamName(g.home_team_id))}</span>
+      <span class="team home">${escapeHtml(g.home_team_label || teamName(g.home_team_id))}</span>
       <span class="score">${escapeHtml(g.home_score ?? '-')} : ${escapeHtml(g.away_score ?? '-')}</span>
-      <span class="team away">${awayTeam ? teamFlagImg(awayTeam) : ''}${escapeHtml(g.away_team_label || teamName(g.away_team_id))}</span>
+      <span class="team away">${escapeHtml(g.away_team_label || teamName(g.away_team_id))}</span>
       <span class="meta">${escapeHtml(g.local_date)} · Grupo ${escapeHtml(g.group)}</span>`;
     block.appendChild(row);
   });
