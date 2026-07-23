@@ -1,342 +1,177 @@
 # Pruebas para la defensa — Kick Off Mundial 2026
 
-Guía paso a paso para demostrar resiliencia (401/429/500, reintentos, caché,
-offline) durante la exposición. Todos los comandos incluyen la variante para
-**PowerShell** (la terminal por defecto en Windows 10/11) y, cuando cambia,
-la variante para **CMD**.
+Guía corta para probar el sistema error por error usando PowerShell.
 
-## 1. Instalar dependencias
+1. Iniciar el proyecto
 
-El proyecto no usa dependencias externas (solo `http`, `fs`, `path` de
-Node.js), así que no hay paquetes que instalar. Solo se necesita Node.js 18+.
+Abrir PowerShell en la carpeta del proyecto y ejecuta:
 
-```powershell
-node -v
-```
-
-Si no aparece una versión `v18` o superior, instala Node.js desde
-https://nodejs.org antes de continuar.
-
-## 2. Iniciar el proyecto
-
-PowerShell / CMD (desde la carpeta del proyecto):
-
-```powershell
 npm start
-```
 
-Equivalente directo (sin npm):
+Debe aparecer:
 
-```powershell
-node server.js
-```
-
-Deberías ver:
-
-```
 Aplicación disponible en http://localhost:5500
-[DEBUG] Simulador de errores disponible en /api/_debug/simulate (ver PRUEBAS_DEFENSA.md).
-```
-
-## 3. URL local
-
-Abre en el navegador: **http://localhost:5500**
-
-## 4. Probar una petición normal
-
-1. Abre DevTools (`F12`) → pestaña **Network**.
-2. Inicia sesión o crea una cuenta.
-3. Entra a cualquier vista (por ejemplo "Tour de Sedes").
-4. En Network deberías ver `GET /api/get/stadiums` con status `200`.
-5. En Console deberías ver: `[API] GET /get/stadiums`.
-
-> Nota: esta prueba requiere que tu máquina tenga salida a Internet hacia
-> `worldcup26.ir` (el servidor local solo hace de proxy). Si no hay
-> conexión, ver la sección 13 (modo offline / caché).
-
-## 5. Provocar un 401 (sesión expirada)
 
-**Opción A — desde la Consola del navegador** (recomendada, no requiere
-terminal aparte). Con la app abierta y una sesión iniciada:
-
-```js
-await fetch('/api/_debug/simulate', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ status: 401, path: 'all' }),
-});
-```
+Abrir otra terminal de PowerShell para copiar los comandos de las pruebas.
 
-Luego cambia de vista o recarga: la próxima petición recibirá `401` real
-(visible en Network), se borrará el token/usuario guardado y aparecerá el
-modal **"Sesión expirada"**. La interfaz de fondo sigue visible; no hay
-recarga automática de la página.
+En el navegador se ingresa a:
 
-**Opción B — desde una terminal (PowerShell)**:
+http://localhost:5500
 
-```powershell
-Invoke-RestMethod -Uri http://localhost:5500/api/_debug/simulate -Method POST -ContentType "application/json" -Body '{"status":401,"path":"all"}'
-```
+F12 → Network → Fetch/XHR.
 
-**Opción B — CMD / curl:**
+2. Comprobar el funcionamiento normal
 
-```cmd
-curl -X POST http://localhost:5500/api/_debug/simulate -H "Content-Type: application/json" -d "{\"status\":401,\"path\":\"all\"}"
-```
+Recargar la aplicación y revisa una petición como teams, games o stadiums.
 
-Resultado esperado: 1 sola petición con status `401` en Network, consola con
-`[AUTH] Sesión eliminada por respuesta 401`, un único modal (aunque cambies
-de vista varias veces), botón **Reautenticarse** que regresa al login sin
-recargar la página.
-
-## 6. Provocar un 429 (demasiadas solicitudes)
+Resultado esperado:
 
-```js
-await fetch('/api/_debug/simulate', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ status: 429, path: '/get/games' }),
-});
-```
-
-(`path` puede ser cualquier endpoint: `/get/games`, `/get/teams`,
-`/get/groups`, `/get/stadiums`, o `"all"` para todos).
-
-Navega a una vista que use ese endpoint (por ejemplo "Agenda Simultánea").
-En Network deberás ver **5 peticiones** a `/api/get/games`, todas con status
-`429` real: 1 original + 4 reintentos. En pantalla aparece la barra
-"Reintento X/4" con countdown visible (8… 7… 6…). En Console:
+Status: 200 OK
 
-```
-[API] GET /get/games
-[API] HTTP 429 en /get/games
-[API] Reintento 1 de 4 en 1 segundo
-[API] HTTP 429 en /get/games
-[API] Reintento 2 de 4 en 2 segundos
-[API] HTTP 429 en /get/games
-[API] Reintento 3 de 4 en 4 segundos
-[API] HTTP 429 en /get/games
-[API] Reintento 4 de 4 en 8 segundos
-[API] HTTP 429 en /get/games
-[API] Reintentos agotados para /get/games
-```
+Esto confirma que la aplicación y la API funcionan normalmente.
 
-Si hay caché de ese endpoint, se muestran los datos con la insignia
-**"Datos no actualizados"** (persistente, sin auto-ocultarse). Si no hay
-caché, la vista muestra un error local con botón **Reintentar**.
+3. Probar el error 401
 
-## 7. Provocar un 500 (error interno)
+En la segunda terminal de PowerShell:
 
-Igual que el 429, cambiando el status:
+Invoke-RestMethod -Method POST -Uri "http://localhost:5500/api/_debug/simulate" -ContentType "application/json" -Body '{"status":401,"path":"all"}'
 
-```js
-await fetch('/api/_debug/simulate', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ status: 500, path: '/get/teams' }),
-});
-```
+Regresar a la aplicación, limpiar Network y recargar.
 
-Mismo comportamiento: 5 peticiones visibles en Network con status `500`
-real, 4 reintentos con backoff 1s/2s/4s/8s, countdown visible, caché o error
-local al agotarse.
+Resultado esperado:
 
-**PowerShell equivalente:**
+Peticiones en rojo con 401 Unauthorized.
 
-```powershell
-Invoke-RestMethod -Uri http://localhost:5500/api/_debug/simulate -Method POST -ContentType "application/json" -Body '{"status":500,"path":"/get/teams"}'
-```
+Aparece el mensaje “Sesión expirada”.
 
-## 8. Desactivar el modo de prueba
+Se elimina la sesión y aparece la opción “Reautenticarse”.
 
-```js
-await fetch('/api/_debug/clear', { method: 'POST' });
-```
+Volver al modo normal
 
-**PowerShell:**
+Invoke-RestMethod -Method POST -Uri "http://localhost:5500/api/_debug/clear"
 
-```powershell
-Invoke-RestMethod -Uri http://localhost:5500/api/_debug/clear -Method POST
-```
+Pulsar Reautenticarse, iniciar sesión y comprobar que las peticiones vuelvan a 200.
 
-**CMD / curl:**
+4. Probar el error 429
 
-```cmd
-curl -X POST http://localhost:5500/api/_debug/clear
-```
+Invoke-RestMethod -Method POST -Uri "http://localhost:5500/api/_debug/simulate" -ContentType "application/json" -Body '{"status":429,"path":"all"}'
 
-Para confirmar que quedó apagado:
+Limpiar Network y recargar la aplicación.
 
-```powershell
-Invoke-RestMethod -Uri http://localhost:5500/api/_debug/status
-```
+Resultado esperado:
 
-Debe responder `"enabled": false`. A partir de ahí todas las peticiones
-vuelven a comportarse con normalidad de inmediato (no hace falta reiniciar
-el servidor). El simulador **solo funciona en localhost/desarrollo**: si el
-servidor corre con `NODE_ENV=production` o se accede desde otra IP, las
-rutas `/api/_debug/*` responden `403` y nunca alteran el tráfico real.
+Peticiones con 429 Too Many Requests.
 
-## 9. Qué revisar en Network
+Reintentos automáticos después de 1, 2, 4 y 8 segundos.
 
-- El status HTTP de cada petición (`200`, `401`, `429`, `500`) es el real
-  devuelto por el servidor local, no uno inventado en el frontend.
-- Al simular 429/500 deben verse **5 peticiones** al mismo endpoint (1 +
-  4 reintentos), nunca más ni menos.
-- El header `Authorization: Bearer <token>` debe estar presente en las
-  peticiones a `/api/get/*` cuando hay sesión iniciada, y **ausente** (no
-  `"Bearer null"`) si no hay token.
+La sesión permanece abierta.
 
-## 10. Qué mensajes deben aparecer en Console
+La aplicación conserva la información anterior y muestra “Datos no actualizados”.
 
-Formato usado por `js/api.js` (ver también `[CACHE]`, `[AUTH]` y `[FLAGS]`):
+Volver al modo normal
 
-```
-[API] GET /get/games
-[API] HTTP 500 en /get/games
-[API] Reintento 1 de 4 en 1 segundo
-[API] Reintento 2 de 4 en 2 segundos
-[API] Reintentos agotados para /get/games
-[CACHE] Mostrando datos no actualizados de /get/games (guardados …)
-[AUTH] Sesión eliminada por respuesta 401
-```
+Invoke-RestMethod -Method POST -Uri "http://localhost:5500/api/_debug/clear"
 
-Nunca debe aparecer el JWT completo, la contraseña, ni un `alert()`.
+Recargar y confirmar que las peticiones vuelvan a 200.
 
-## 11. Cómo comprobar el token
+5. Probar el error 500
 
-En Console:
+Invoke-RestMethod -Method POST -Uri "http://localhost:5500/api/_debug/simulate" -ContentType "application/json" -Body '{"status":500,"path":"all"}'
 
-```js
-localStorage.getItem('wc2026_token')
-```
+Limpiar Network, recargar y esperar a que terminen los reintentos.
 
-Debe mostrar el JWT (o `null` si no hay sesión). Nunca se registra
-completo en los `console.*` de `api.js` (solo se usa internamente en el
-header `Authorization`).
+Resultado esperado:
 
-## 12. Cómo comprobar las claves de caché
+Peticiones con 500 Internal Server Error.
 
-En Console:
+Se realizan cuatro reintentos.
 
-```js
-Object.keys(localStorage).filter(k => k.startsWith('wc2026_cache_'))
-```
+Al final aparece “Reintentos agotados” en Console.
 
-Cada endpoint tiene su propia clave, por ejemplo:
+La sesión permanece abierta.
 
-```
-wc2026_cache_/get/games
-wc2026_cache_/get/teams
-wc2026_cache_/get/groups
-wc2026_cache_/get/stadiums
-```
+Se conservan los datos anteriores con el aviso “Datos no actualizados”.
 
-Para ver el contenido de una:
+Volver al modo normal
 
-```js
-JSON.parse(localStorage.getItem('wc2026_cache_/get/games'))
-// { data: {...}, path: '/get/games', savedAt: 1753..., version: 1 }
-```
+Invoke-RestMethod -Method POST -Uri "http://localhost:5500/api/_debug/clear"
 
-## 13. Cómo activar el modo Offline
+Recargar y confirmar que las peticiones vuelvan a 200.
 
-1. DevTools → pestaña **Network** → menú de límite de red → **Offline**.
-2. Navega entre vistas que ya visitaste (para que usen su caché) y también
-   alguna que no hayas visitado (para ver el error "sin caché").
+6. Probar la pérdida de conexión
 
-## 14. Cómo probar con caché
+Con la aplicación cargada, abrir F12 → Network.
 
-1. Con conexión normal, visita cada vista al menos una vez (para que
-   `api.js` guarde su caché por endpoint).
-2. Actívate el modo Offline (paso 13) o simula un 500/429 (pasos 6-7).
-3. Recarga o cambia de vista: debe aparecer el contenido cacheado con la
-   insignia **"Datos no actualizados"**, persistente hasta que:
-   - se recupera la red y llega una respuesta nueva, o
-   - el usuario pulsa **Reintentar** manualmente.
+Cambiar No throttling a Offline.
 
-## 15. Cómo probar sin caché
+No recargar la página.
 
-Usa un perfil/pestaña de incógnito (localStorage vacío) o borra las claves:
+Cambiar de sección dentro de la aplicación para provocar una nueva solicitud.
 
-```js
-Object.keys(localStorage).filter(k => k.startsWith('wc2026_cache_')).forEach(k => localStorage.removeItem(k));
-```
+Resultado esperado:
 
-Con la red desconectada o un 500/429 simulado, la vista debe mostrar un
-error local con botón **Reintentar** — nunca una pantalla en blanco.
+Las nuevas peticiones fallan con ERR_INTERNET_DISCONNECTED.
 
-## 16. Cómo verificar los reintentos
+La aplicación permanece abierta.
 
-- Consola: deben aparecer exactamente 4 líneas `[API] Reintento N de 4…`.
-- Network: 5 peticiones al mismo endpoint.
-- Tiempos entre peticiones: ~1s, ~2s, ~4s, ~8s (puedes verificarlo con la
-  columna de tiempo de Network o cronometrando el countdown en pantalla).
+La sesión y los datos anteriores se conservan.
 
-## 17. Resultado esperado en cada prueba
+Volver al modo normal
 
-| Prueba | Resultado esperado |
-|---|---|
-| Petición normal | `200 OK`, datos reales, sin advertencias |
-| 401 simulado | 1 petición `401`, sesión borrada, 1 modal, sin reload |
-| 429 simulado | 5 peticiones `429`, countdown 1-2-4-8s, caché o error final |
-| 500 simulado | 5 peticiones `500`, countdown 1-2-4-8s, caché o error final |
-| Offline con caché | Datos cacheados + insignia persistente |
-| Offline sin caché | Error local + botón Reintentar, sin pantalla en blanco |
-| Recuperación | Al reintentar con red/API ok, se actualiza el dato y desaparece la insignia |
-| Agenda | Botones "fecha anterior/siguiente" navegan solo entre fechas con partidos |
-| Skeletons | Aparecen durante la carga/cambio de fecha y desaparecen con datos o error |
-| Banderas | Bandera real junto al nombre en dashboard, matriz, tour, agenda y timeline; placeholder + aviso en consola si no hay bandera reconocida |
-| Matriz | 12 grupos, nombre real de cada uno, diagonal deshabilitada, "Pendiente" si no hay resultado |
-| Responsive | Layout usable en escritorio, tablet y celular, sin scroll horizontal de página |
+Cambiar Offline a No throttling.
 
-## 18. Cómo recuperar el funcionamiento normal
+Recargar con Ctrl + R.
 
-1. Apaga cualquier simulación: `POST /api/_debug/clear` (paso 8).
-2. Vuelve a activar la red en DevTools (quitar "Offline").
-3. Si quedó el modal de sesión expirada en pantalla, pulsa
-   **Reautenticarse** e inicia sesión de nuevo.
-4. Si algo quedó en un estado raro, un refresco normal de la página (F5)
-   es seguro: el token válido se reutiliza automáticamente
-   (`tryAutoLogin`), no se pierde ningún dato cacheado.
+Confirmar que las peticiones vuelvan a 200.
 
----
+7. Orden recomendado para la defensa
 
-## Empaquetar el proyecto para entrega (ZIP)
+Haz siempre una prueba a la vez:
 
-**PowerShell** (excluye `.git`, `node_modules`, logs y temporales):
+Comprobar 200.
 
-```powershell
-Compress-Archive -Path * -DestinationPath ..\kickoff-entrega.zip -Force `
-  -CompressionLevel Optimal
-# Luego, si el zip incluyó .git o node_modules por error, ábrelo y bórralos
-# manualmente, o usa 7-Zip con exclusiones:
-```
+Activar 401, comprobarlo y ejecutar clear.
 
-**Con 7-Zip (recomendado, soporta exclusiones nativas):**
+Confirmar nuevamente 200.
 
-```powershell
-7z a ..\kickoff-entrega.zip . -xr!.git -xr!node_modules -xr!*.log -x!.env
-```
+Activar 429, comprobarlo y ejecutar clear.
 
-Antes de comprimir, confirma que el proyecto reinstala sin problemas:
+Confirmar nuevamente 200.
 
-```powershell
-Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
-npm install
+Activar 500, comprobarlo y ejecutar clear.
+
+Confirmar nuevamente 200.
+
+Probar Offline y devolverlo a No throttling.
+
+8. Si algo sale mal
+
+El simulador muestra “Route not found”
+
+No abras la ruta del simulador directamente en Chrome. Esa ruta necesita una petición POST. Usa los comandos de PowerShell de esta guía.
+
+Las peticiones normales siguen mostrando el error
+
+Ejecutar:
+
+Invoke-RestMethod -Method POST -Uri "http://localhost:5500/api/_debug/clear"
+
+Después recargar la aplicación.
+
+La página muestra “No internet”
+
+Devuelve Network de Offline a No throttling y recarga.
+
+No aparece ninguna petición en Network
+
+Seleccionar All o Fetch/XHR, limpia la lista y recarga.
+
+El proyecto deja de responder
+
+Revisar que la terminal donde ejecutaste npm start siga abierta. Para detener el servidor usa:
+
+Ctrl + C
+
+Después volver a iniciarlo con:
+
 npm start
-```
-
-Como el proyecto no tiene dependencias de terceros, `npm install` no
-descargará nada adicional; sirve solo para confirmar que `package.json`
-está bien formado.
-
----
-
-## Limitaciones conocidas
-
-- El simulador de errores (`/api/_debug/*`) **nunca** contacta la API real:
-  cuando está activo, responde de inmediato con el status simulado. Esto es
-  intencional (no satura ni modifica `worldcup26.ir`).
-- Las pruebas de "petición normal" (sección 4) requieren salida real a
-  Internet hacia `worldcup26.ir` desde la máquina donde corre el servidor.

@@ -23,6 +23,4 @@ Luego abre **http://localhost:5500**.
 
 Ver **[PRUEBAS_DEFENSA.md](./PRUEBAS_DEFENSA.md)** para instrucciones
 detalladas (Windows/PowerShell incluido): cómo provocar y probar los
-errores 401/429/500 de forma controlada, verificar reintentos y backoff,
-probar el modo offline y la caché por endpoint, y empaquetar el proyecto
-para entrega.
+errores 401/429/500 de forma controlada
